@@ -23,10 +23,10 @@ Módulo ERP para la gestión de un supermercado. Permite:
 
 ## Miembros del Grupo 6
 
-- Mohammed (usuario: @Adream14)
+- Mohammed 
 - Pablo (usuario: @pfosela)
 - Fabián
-- Subire
+- Subire (usuario: @Adream14)
 
 ## Requisitos
 
