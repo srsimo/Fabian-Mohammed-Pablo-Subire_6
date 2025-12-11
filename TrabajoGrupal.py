@@ -53,13 +53,25 @@ cursor.execute("CREATE TABLE IF NOT EXISTS categoria(id_Categoria INTEGER PRIMAR
 
 cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
     id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
-    id_Cliente INTEGER,
-    id_Pedido INTEGER,
-    FOREIGN KEY (id_Cliente) REFERENCES cliente(id_Cliente),
-    FOREIGN KEY (id_Pedido) REFERENCES pedido(id_Pedido)
+    id_Categoria INTEGER,
+    precio FLOAT,
+    stock INTEGER
+    
+    FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria),
 )""")
 
 
-cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente PRIMARY KEY AUTOINCREMENT, nombre_Cliente Varchar 20, apellido_Cliente Varchar 20, direccion Varchar 50, correo Varchar 50);")
+cursor.execute("""CREATE TABLE IF NOT EXISTS pedido(
+    id_Pedido INTEGER PRIMARY KEY AUTOINCREMENT, 
+    id_Cliente INTEGER,
+    id_Producto INTEGER,
+    fecha_Pedido DATE,
+    cantidad INTEGER,
+    precio_Total FLOAT,
+    FOREIGN KEY (id_Cliente) REFERENCES cliente(id_Cliente),
+    FOREIGN KEY (id_Producto) REFERENCES producto(id_Producto)
+)""")
+
+cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente PRIMARY KEY AUTOINCREMENT, nombre_Cliente VARCHAR(20), apellido_Cliente VARCHAR(20), direccion VARCHAR(50), correo VARCHAR(50));")
 
 raiz.mainloop()
