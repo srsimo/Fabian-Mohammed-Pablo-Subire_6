@@ -52,4 +52,6 @@ cursor = conexion.cursor()
 
 cursor.execute("CREATE TABLE IF NOT EXIST categoria(id PRIMARY KEY AUTOINCREMENT, nombre Varchar 20);")
 
+cursor.execute("CREATE TABLE IF NOT EXISTS cliente(idCliente PRIMARY KEY AUTOINCREMENT, nombreCliente Varchar 20, apellidoCliente Varchar 20, direccion Varchar 50, correo Varchar 50);")
+
 raiz.mainloop()
