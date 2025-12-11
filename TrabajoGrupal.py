@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
 <<<<<<< HEAD
@@ -7,6 +8,7 @@ Created on Thu Dec  4 17:57:50 2025
 """
 import sqlite3
 import tkinter as tkinter
+
 raiz = tkinter.Tk()
 raiz.title("UDUU")
 raiz.geometry("800x600")
@@ -43,24 +45,29 @@ botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, hig
 botonGrafico.grid(row=0, column=4, sticky="ew")
 botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
 
-
+# Conexión a la base de datos
 conexion = sqlite3.connect("supermercado.db")
-
 cursor = conexion.cursor()
 
+# Activar claves foráneas en SQLite
+cursor.execute("PRAGMA foreign_keys = ON")
+
+# Crear tabla categoria (debe ir primero porque producto la referencia)
 cursor.execute("CREATE TABLE IF NOT EXISTS categoria(id_Categoria INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Categoria VARCHAR(20))")
 
+# Crear tabla cliente (debe ir antes de pedido porque pedido la referencia)
+cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Cliente VARCHAR(20), apellido_Cliente VARCHAR(20), direccion VARCHAR(50), correo VARCHAR(50))")
 
+# Crear tabla producto
 cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
     id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
     id_Categoria INTEGER,
     precio FLOAT,
-    stock INTEGER
-    
-    FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria),
+    stock INTEGER,
+    FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria)
 )""")
 
-
+# Crear tabla pedido (debe ir al final porque referencia a cliente y producto)
 cursor.execute("""CREATE TABLE IF NOT EXISTS pedido(
     id_Pedido INTEGER PRIMARY KEY AUTOINCREMENT, 
     id_Cliente INTEGER,
@@ -72,6 +79,10 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS pedido(
     FOREIGN KEY (id_Producto) REFERENCES producto(id_Producto)
 )""")
 
-cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente PRIMARY KEY AUTOINCREMENT, nombre_Cliente VARCHAR(20), apellido_Cliente VARCHAR(20), direccion VARCHAR(50), correo VARCHAR(50));")
+# Guardar cambios
+conexion.commit()
 
 raiz.mainloop()
+
+# Cerrar conexión al finalizar
+conexion.close()
