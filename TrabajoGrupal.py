@@ -60,6 +60,6 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
 )""")
 
 
-cursor.execute("CREATE TABLE IF NOT EXISTS cliente(idCliente PRIMARY KEY AUTOINCREMENT, nombreCliente Varchar 20, apellidoCliente Varchar 20, direccion Varchar 50, correo Varchar 50);")
+cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente PRIMARY KEY AUTOINCREMENT, nombre_Cliente Varchar 20, apellido_Cliente Varchar 20, direccion Varchar 50, correo Varchar 50);")
 
 raiz.mainloop()
