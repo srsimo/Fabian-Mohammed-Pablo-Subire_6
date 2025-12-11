@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
+<<<<<<< HEAD
 @author: pablo, subire, moha y fabian
+=======
+@author: pablo, subire, Mohammed, Fabian
+>>>>>>> 3ef513525c0a4c72ed2d644575e08bf105a20951
 """
 import sqlite3
 import tkinter as tkinter
