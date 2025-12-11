@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
-@author: pablo, subire, 
+@author: pablo, subire, moha y fabian
 """
+import sqlite3
 import tkinter as tkinter
 raiz = tkinter.Tk()
 raiz.title("UDUU")
@@ -39,5 +40,12 @@ textoGrafico = "Grafico"
 botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
 botonGrafico.grid(row=0, column=4, sticky="ew")
 botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+
+conexion = sqlite3.connect("supermercado.db")
+
+cursor = conexion.cursor()
+
+cursor.execute("CREATE TABLE IF NOT EXIST categoria(id PRIMARY KEY AUTOINCREMENT, nombre Varchar 20);")
 
 raiz.mainloop()
