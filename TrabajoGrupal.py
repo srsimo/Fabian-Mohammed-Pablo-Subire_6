@@ -2,8 +2,6 @@
 """
 Created on Thu Dec  4 17:57:50 2025
 <<<<<<< HEAD
-@author: pablo, subire, moha y fabian
-=======
 @author: pablo, subire, Mohammed, Fabian
 >>>>>>> 3ef513525c0a4c72ed2d644575e08bf105a20951
 """
@@ -50,7 +48,17 @@ conexion = sqlite3.connect("supermercado.db")
 
 cursor = conexion.cursor()
 
-cursor.execute("CREATE TABLE IF NOT EXIST categoria(id PRIMARY KEY AUTOINCREMENT, nombre Varchar 20);")
+cursor.execute("CREATE TABLE IF NOT EXISTS categoria(id_Categoria INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Categoria VARCHAR(20))")
+
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
+    id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
+    id_Cliente INTEGER,
+    id_Pedido INTEGER,
+    FOREIGN KEY (id_Cliente) REFERENCES cliente(id_Cliente),
+    FOREIGN KEY (id_Pedido) REFERENCES pedido(id_Pedido)
+)""")
+
 
 cursor.execute("CREATE TABLE IF NOT EXISTS cliente(idCliente PRIMARY KEY AUTOINCREMENT, nombreCliente Varchar 20, apellidoCliente Varchar 20, direccion Varchar 50, correo Varchar 50);")
 
