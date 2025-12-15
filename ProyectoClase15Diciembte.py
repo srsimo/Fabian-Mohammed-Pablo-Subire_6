@@ -105,51 +105,58 @@ notebook.grid(row=1, column=0, columnspan=5, sticky="nsew", padx=10, pady=10)
 # Configurar que la fila 1 se expanda
 raiz.grid_rowconfigure(1, weight=1)
 
-# ============================================================================
-# PARTE DINÁMICA: Obtener todas las tablas y mostrarlas automáticamente
-# ============================================================================
 
-# 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
-cursor.execute("""
-    SELECT name FROM sqlite_master 
-    WHERE type='table' AND name NOT LIKE 'sqlite_%'
-    ORDER BY name
-""")
-tablas = cursor.fetchall()  # Devuelve una lista de tuplas: [('categoria',), ('cliente',), ...]
+def LeerBaseDatos():
+    # ============================================================================
+    # PARTE DINÁMICA: Obtener todas las tablas y mostrarlas automáticamente
+    # ============================================================================
 
-# 2. Para cada tabla encontrada, crear una pestaña con su Treeview
-for tabla_tupla in tablas:
-    nombre_tabla = tabla_tupla[0]  # Extraer el nombre de la tabla de la tupla
-    
-    # 3. Obtener las columnas de esta tabla usando PRAGMA
-    cursor.execute(f"PRAGMA table_info({nombre_tabla})")
-    info_columnas = cursor.fetchall()  # Devuelve info de cada columna
-    # info_columnas es algo como: [(0, 'id_Categoria', 'INTEGER', 0, None, 1), (1, 'nombre_Categoria', 'VARCHAR(20)', 0, None, 0)]
-    
-    # Extraer solo los nombres de las columnas (índice 1 de cada tupla)
-    nombres_columnas = [col[1] for col in info_columnas]
-    
-    # 4. Crear el frame para esta tabla
-    frame = tkinter.Frame(notebook)
-    notebook.add(frame, text=nombre_tabla.capitalize())  # Añadir pestaña con nombre de tabla
-    
-    # 5. Crear el Treeview con las columnas dinámicas
-    tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
-    
-    # 6. Configurar los encabezados de las columnas
-    for columna in nombres_columnas:
-        tree.heading(columna, text=columna)  # Poner el nombre de la columna como encabezado
-        tree.column(columna, width=100)  # Opcional: ajustar ancho
-    
-    tree.pack(fill="both", expand=True)
-    
-    # 7. Cargar los datos de la tabla
-    cursor.execute(f"SELECT * FROM {nombre_tabla}")
-    filas = cursor.fetchall()
-    
-    for fila in filas:
-        tree.insert("", "end", values=fila)
+    # 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tablas = cursor.fetchall()  # Devuelve una lista de tuplas: [('categoria',), ('cliente',), ...]
 
+    # 2. Para cada tabla encontrada, crear una pestaña con su Treeview
+    for tabla_tupla in tablas:
+        nombre_tabla = tabla_tupla[0]  # Extraer el nombre de la tabla de la tupla
+        
+        # 3. Obtener las columnas de esta tabla usando PRAGMA
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        info_columnas = cursor.fetchall()  # Devuelve info de cada columna
+        # info_columnas es algo como: [(0, 'id_Categoria', 'INTEGER', 0, None, 1), (1, 'nombre_Categoria', 'VARCHAR(20)', 0, None, 0)]
+        
+        # Extraer solo los nombres de las columnas (índice 1 de cada tupla)
+        nombres_columnas = [col[1] for col in info_columnas]
+        
+        # 4. Crear el frame para esta tabla
+        frame = tkinter.Frame(notebook)
+        notebook.add(frame, text=nombre_tabla.capitalize())  # Añadir pestaña con nombre de tabla
+        
+        # 5. Crear el Treeview con las columnas dinámicas
+        tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
+        
+        # 6. Configurar los encabezados de las columnas
+        for columna in nombres_columnas:
+            tree.heading(columna, text=columna)  # Poner el nombre de la columna como encabezado
+            tree.column(columna, width=100)  # Opcional: ajustar ancho
+        
+        tree.pack(fill="both", expand=True)
+        
+        # 7. Cargar los datos de la tabla
+        cursor.execute(f"SELECT * FROM {nombre_tabla}")
+        filas = cursor.fetchall()
+        
+        for fila in filas:
+            tree.insert("", "end", values=fila)
+
+
+
+
+
+LeerBaseDatos()
 raiz.mainloop()
 
 # Cerrar conexión al finalizar
