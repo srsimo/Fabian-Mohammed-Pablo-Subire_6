@@ -20,7 +20,7 @@ raiz.grid_columnconfigure(2, weight=1)
 raiz.grid_columnconfigure(3, weight=1)
 raiz.grid_columnconfigure(4, weight=1)
 
-<<<<<<< Updated upstream
+
 
 def CrearTabla():
     # Función interna para insertar datos (VENTANA 3)
@@ -255,13 +255,13 @@ def BuscarTabla():
 
 textoCrear = "Crear"
 botonCrear = tkinter.Button(raiz, text=textoCrear, command=CrearTabla, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
-=======
+
 # Crear botones
 textoCrear = "Crear"
 botonCrear = tkinter.Button(raiz, text=textoCrear, command=lambda: CrearTabla(), 
                             relief="solid", bd=1, highlightbackground="black", 
                             highlightthickness=1)
->>>>>>> Stashed changes
+
 botonCrear.grid(row=0, column=0, sticky="ew")
 botonCrear.config(fg="white", bg="dodgerblue", font=('arial',15))
 
@@ -356,7 +356,7 @@ raiz.grid_rowconfigure(1, weight=1)
 
 
 def LeerBaseDatos():
-<<<<<<< Updated upstream
+
     # LIMPIAR PESTAÑAS EXISTENTES ANTES DE CARGAR
     for tab in notebook.tabs():
         notebook.forget(tab)
@@ -366,13 +366,13 @@ def LeerBaseDatos():
     # ============================================================================
 
     # 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
-=======
+
     # Limpiar pestañas existentes
     for tab in notebook.tabs():
         notebook.forget(tab)
     
     # Obtener todas las tablas de la base de datos
->>>>>>> Stashed changes
+
     cursor.execute("""
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
@@ -406,8 +406,7 @@ def LeerBaseDatos():
             tree.insert("", "end", values=fila)
 
 
-<<<<<<< Updated upstream
-=======
+
 def CrearTabla():
     print("Ejemplo")
 
@@ -681,7 +680,7 @@ def mostrar_exito(tabla):
 
 def BuscarTabla():
     print("Ejemplo")
->>>>>>> Stashed changes
+
 
 
 LeerBaseDatos()
