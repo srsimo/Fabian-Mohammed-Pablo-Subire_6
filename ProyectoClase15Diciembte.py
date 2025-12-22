@@ -153,6 +153,38 @@ def LeerBaseDatos():
             tree.insert("", "end", values=fila)
 
 
+def CrearTabla():
+    print("Ejemplo")
+    
+    
+    
+    
+    
+    
+
+
+
+
+def BorrarTabla():
+    print("Ejemplo")
+
+
+
+
+
+def EditarTabla():
+    print("Ejemplo")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+def BuscarTabla():
+    print("Ejemplo")
 
 
 
