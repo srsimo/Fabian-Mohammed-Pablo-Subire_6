@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
@@ -6,6 +7,7 @@ Created on Thu Dec  4 17:57:50 2025
 import sqlite3
 import tkinter as tkinter
 from tkinter import ttk
+from tkinter import messagebox
 
 raiz = tkinter.Tk()
 raiz.title("UDUU")
@@ -18,6 +20,7 @@ raiz.grid_columnconfigure(2, weight=1)
 raiz.grid_columnconfigure(3, weight=1)
 raiz.grid_columnconfigure(4, weight=1)
 
+<<<<<<< Updated upstream
 
 def CrearTabla():
     # Función interna para insertar datos (VENTANA 3)
@@ -252,26 +255,40 @@ def BuscarTabla():
 
 textoCrear = "Crear"
 botonCrear = tkinter.Button(raiz, text=textoCrear, command=CrearTabla, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+=======
+# Crear botones
+textoCrear = "Crear"
+botonCrear = tkinter.Button(raiz, text=textoCrear, command=lambda: CrearTabla(), 
+                            relief="solid", bd=1, highlightbackground="black", 
+                            highlightthickness=1)
+>>>>>>> Stashed changes
 botonCrear.grid(row=0, column=0, sticky="ew")
 botonCrear.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoBorrar = "Eliminar"
-botonBorrar = tkinter.Button(raiz, text=textoBorrar, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonBorrar = tkinter.Button(raiz, text=textoBorrar, command=lambda: BorrarTabla(),
+                             relief="solid", bd=1, highlightbackground="black", 
+                             highlightthickness=1)
 botonBorrar.grid(row=0, column=1, sticky="ew")
 botonBorrar.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoEditar = "Editar"
-botonEditar = tkinter.Button(raiz, text=textoEditar, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonEditar = tkinter.Button(raiz, text=textoEditar, command=lambda: EditarTabla(),
+                             relief="solid", bd=1, highlightbackground="black", 
+                             highlightthickness=1)
 botonEditar.grid(row=0, column=2, sticky="ew")
 botonEditar.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoBuscar = "Buscar"
-botonBuscar = tkinter.Button(raiz, text=textoBuscar, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonBuscar = tkinter.Button(raiz, text=textoBuscar, command=lambda: BuscarTabla(),
+                             relief="solid", bd=1, highlightbackground="black", 
+                             highlightthickness=1)
 botonBuscar.grid(row=0, column=3, sticky="ew")
 botonBuscar.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoGrafico = "Grafico"
-botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, 
+                              highlightbackground="black", highlightthickness=1)
 botonGrafico.grid(row=0, column=4, sticky="ew")
 botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
 
@@ -339,6 +356,7 @@ raiz.grid_rowconfigure(1, weight=1)
 
 
 def LeerBaseDatos():
+<<<<<<< Updated upstream
     # LIMPIAR PESTAÑAS EXISTENTES ANTES DE CARGAR
     for tab in notebook.tabs():
         notebook.forget(tab)
@@ -348,40 +366,39 @@ def LeerBaseDatos():
     # ============================================================================
 
     # 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
+=======
+    # Limpiar pestañas existentes
+    for tab in notebook.tabs():
+        notebook.forget(tab)
+    
+    # Obtener todas las tablas de la base de datos
+>>>>>>> Stashed changes
     cursor.execute("""
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
         ORDER BY name
     """)
-    tablas = cursor.fetchall()  # Devuelve una lista de tuplas: [('categoria',), ('cliente',), ...]
+    tablas = cursor.fetchall()
 
-    # 2. Para cada tabla encontrada, crear una pestaña con su Treeview
     for tabla_tupla in tablas:
-        nombre_tabla = tabla_tupla[0]  # Extraer el nombre de la tabla de la tupla
+        nombre_tabla = tabla_tupla[0]
         
-        # 3. Obtener las columnas de esta tabla usando PRAGMA
         cursor.execute(f"PRAGMA table_info({nombre_tabla})")
-        info_columnas = cursor.fetchall()  # Devuelve info de cada columna
-        # info_columnas es algo como: [(0, 'id_Categoria', 'INTEGER', 0, None, 1), (1, 'nombre_Categoria', 'VARCHAR(20)', 0, None, 0)]
+        info_columnas = cursor.fetchall()
         
-        # Extraer solo los nombres de las columnas (índice 1 de cada tupla)
         nombres_columnas = [col[1] for col in info_columnas]
         
-        # 4. Crear el frame para esta tabla
         frame = tkinter.Frame(notebook)
-        notebook.add(frame, text=nombre_tabla.capitalize())  # Añadir pestaña con nombre de tabla
+        notebook.add(frame, text=nombre_tabla.capitalize())
         
-        # 5. Crear el Treeview con las columnas dinámicas
         tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
         
-        # 6. Configurar los encabezados de las columnas
         for columna in nombres_columnas:
-            tree.heading(columna, text=columna)  # Poner el nombre de la columna como encabezado
-            tree.column(columna, width=100)  # Opcional: ajustar ancho
+            tree.heading(columna, text=columna)
+            tree.column(columna, width=100)
         
         tree.pack(fill="both", expand=True)
         
-        # 7. Cargar los datos de la tabla
         cursor.execute(f"SELECT * FROM {nombre_tabla}")
         filas = cursor.fetchall()
         
@@ -389,7 +406,282 @@ def LeerBaseDatos():
             tree.insert("", "end", values=fila)
 
 
+<<<<<<< Updated upstream
+=======
+def CrearTabla():
+    print("Ejemplo")
 
+
+def BorrarTabla():
+    print("Ejemplo")
+
+
+def EditarTabla():
+    """
+    Función principal que inicia el proceso de edición de registros
+    """
+    # Ventana 1: Seleccionar tabla
+    ventana_tabla = tkinter.Toplevel(raiz)
+    ventana_tabla.title("Editar - Seleccionar Tabla")
+    ventana_tabla.geometry("400x250")
+    ventana_tabla.grab_set()  # Hacer la ventana modal
+    
+    # Obtener lista de tablas
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tablas = [tabla[0] for tabla in cursor.fetchall()]
+    
+    label_titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla a editar:", font=('Arial', 12))
+    label_titulo.pack(pady=20)
+    
+    combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('Arial', 11), width=25)
+    combo_tabla.pack(pady=10)
+    if tablas:
+        combo_tabla.current(0)
+    
+    def continuar_con_id():
+        if not combo_tabla.get():
+            messagebox.showerror("Error", "Debe seleccionar una tabla")
+            return
+        
+        tabla_seleccionada = combo_tabla.get()
+        ventana_tabla.destroy()
+        solicitar_primary_key(tabla_seleccionada)
+    
+    boton_siguiente = tkinter.Button(ventana_tabla, text="Siguiente", command=continuar_con_id, 
+                   bg="dodgerblue", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_siguiente.pack(pady=30)
+    
+    ventana_tabla.bind('<Return>', lambda event: continuar_con_id())
+
+
+def solicitar_primary_key(tabla):
+    """
+    Ventana 2: Solicita el ID (Primary Key) del registro a editar
+    """
+    ventana_id = tkinter.Toplevel(raiz)
+    ventana_id.title("Editar - Ingresar ID")
+    ventana_id.geometry("400x250")
+    ventana_id.grab_set()
+    
+    # Obtener el nombre de la columna primary key
+    cursor.execute(f"PRAGMA table_info({tabla})")
+    columnas_info = cursor.fetchall()
+    pk_columna = None
+    for col in columnas_info:
+        if col[5] == 1:  # El índice 5 indica si es primary key
+            pk_columna = col[1]
+            break
+    
+    label_instruccion = tkinter.Label(ventana_id, text=f"Ingrese el {pk_columna} del registro a editar:", 
+                  font=('Arial', 12))
+    label_instruccion.pack(pady=20)
+    
+    entrada_id = tkinter.Entry(ventana_id, font=('Arial', 11), width=20)
+    entrada_id.pack(pady=10)
+    entrada_id.focus()
+    
+    def verificar_y_continuar():
+        id_valor = entrada_id.get().strip()
+        
+        # Validar que se ingresó algo
+        if not id_valor:
+            messagebox.showerror("Error", "Debe ingresar un ID")
+            return
+        
+        # Validar que sea un número entero
+        try:
+            id_int = int(id_valor)
+        except ValueError:
+            messagebox.showerror("Error", "El ID debe ser un número entero")
+            return
+        
+        # Verificar que el registro existe
+        cursor.execute(f"SELECT * FROM {tabla} WHERE {pk_columna} = ?", (id_int,))
+        registro = cursor.fetchone()
+        
+        if registro is None:
+            messagebox.showerror("Error", f"No existe ningún registro con {pk_columna} = {id_int}")
+            return
+        
+        # Si todo está bien, continuar
+        ventana_id.destroy()
+        seleccionar_campo(tabla, pk_columna, id_int, registro)
+    
+    boton_siguiente = tkinter.Button(ventana_id, text="Siguiente", command=verificar_y_continuar,
+                   bg="dodgerblue", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_siguiente.pack(pady=30)
+    
+    ventana_id.bind('<Return>', lambda event: verificar_y_continuar())
+
+
+def seleccionar_campo(tabla, pk_columna, pk_valor, registro):
+    """
+    Ventana 3: Permite seleccionar qué campo se desea editar
+    """
+    ventana_campo = tkinter.Toplevel(raiz)
+    ventana_campo.title("Editar - Seleccionar Campo")
+    ventana_campo.geometry("500x400")
+    ventana_campo.grab_set()
+    
+    # Obtener información de las columnas
+    cursor.execute(f"PRAGMA table_info({tabla})")
+    columnas_info = cursor.fetchall()
+    
+    # Filtrar para no permitir editar la primary key
+    campos_editables = []
+    valores_actuales = {}
+    
+    for i, col in enumerate(columnas_info):
+        nombre_col = col[1]
+        if col[5] != 1:  # No es primary key
+            campos_editables.append(nombre_col)
+            valores_actuales[nombre_col] = registro[i]
+    
+    label_registro = tkinter.Label(ventana_campo, text=f"Registro actual ({pk_columna} = {pk_valor}):", 
+                  font=('Arial', 12, 'bold'))
+    label_registro.pack(pady=10)
+    
+    # Mostrar valores actuales
+    frame_valores = tkinter.Frame(ventana_campo)
+    frame_valores.pack(pady=10)
+    
+    for campo in campos_editables:
+        label_campo = tkinter.Label(frame_valores, text=f"{campo}: {valores_actuales[campo]}", 
+                     font=('Arial', 10))
+        label_campo.pack(anchor='w', padx=20)
+    
+    label_seleccion = tkinter.Label(ventana_campo, text="Seleccione el campo a editar:", 
+                  font=('Arial', 11))
+    label_seleccion.pack(pady=15)
+    
+    combo_campo = ttk.Combobox(ventana_campo, values=campos_editables, 
+                               state="readonly", font=('Arial', 11), width=25)
+    combo_campo.pack(pady=10)
+    if campos_editables:
+        combo_campo.current(0)
+    
+    def continuar_con_campo():
+        if not combo_campo.get():
+            messagebox.showerror("Error", "Debe seleccionar un campo")
+            return
+        
+        campo_seleccionado = combo_campo.get()
+        
+        # Obtener el tipo de dato del campo
+        tipo_dato = None
+        for col in columnas_info:
+            if col[1] == campo_seleccionado:
+                tipo_dato = col[2]
+                break
+        
+        ventana_campo.destroy()
+        ingresar_nuevo_valor(tabla, pk_columna, pk_valor, campo_seleccionado, 
+                            valores_actuales[campo_seleccionado], tipo_dato)
+    
+    boton_siguiente = tkinter.Button(ventana_campo, text="Siguiente", command=continuar_con_campo,
+                   bg="dodgerblue", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_siguiente.pack(pady=30)
+    
+    ventana_campo.bind('<Return>', lambda event: continuar_con_campo())
+
+
+def ingresar_nuevo_valor(tabla, pk_columna, pk_valor, campo, valor_actual, tipo_dato):
+    """
+    Ventana 4: Permite ingresar el nuevo valor para el campo seleccionado
+    """
+    ventana_valor = tkinter.Toplevel(raiz)
+    ventana_valor.title("Editar - Nuevo Valor")
+    ventana_valor.geometry("450x300")
+    ventana_valor.grab_set()
+    
+    label_campo = tkinter.Label(ventana_valor, text=f"Campo: {campo}", 
+                  font=('Arial', 11, 'bold'))
+    label_campo.pack(pady=10)
+    
+    label_actual = tkinter.Label(ventana_valor, text=f"Valor actual: {valor_actual}", 
+                  font=('Arial', 10))
+    label_actual.pack(pady=5)
+    
+    label_tipo = tkinter.Label(ventana_valor, text=f"Tipo de dato: {tipo_dato}", 
+                  font=('Arial', 9, 'italic'))
+    label_tipo.pack(pady=5)
+    
+    label_instruccion = tkinter.Label(ventana_valor, text="Ingrese el nuevo valor:", 
+                  font=('Arial', 11))
+    label_instruccion.pack(pady=10)
+    
+    entrada_valor = tkinter.Entry(ventana_valor, font=('Arial', 11), width=30)
+    entrada_valor.pack(pady=10)
+    entrada_valor.focus()
+    
+    def guardar_cambio():
+        nuevo_valor = entrada_valor.get().strip()
+        
+        if not nuevo_valor:
+            messagebox.showerror("Error", "Debe ingresar un valor")
+            return
+        
+        # Validar según el tipo de dato
+        try:
+            if 'INT' in tipo_dato.upper():
+                nuevo_valor = int(nuevo_valor)
+            elif 'FLOAT' in tipo_dato.upper() or 'REAL' in tipo_dato.upper():
+                nuevo_valor = float(nuevo_valor)
+            # Para VARCHAR, DATE, etc., mantener como string
+            
+            # Realizar la actualización en la base de datos
+            cursor.execute(f"UPDATE {tabla} SET {campo} = ? WHERE {pk_columna} = ?", 
+                          (nuevo_valor, pk_valor))
+            conexion.commit()
+            
+            ventana_valor.destroy()
+            mostrar_exito(tabla)
+            
+        except ValueError:
+            messagebox.showerror("Error", 
+                f"El valor ingresado no es válido para el tipo {tipo_dato}")
+        except sqlite3.Error as e:
+            messagebox.showerror("Error de Base de Datos", 
+                f"No se pudo realizar la actualización: {str(e)}")
+    
+    boton_guardar = tkinter.Button(ventana_valor, text="Guardar", command=guardar_cambio,
+                   bg="green", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_guardar.pack(pady=30)
+    
+    ventana_valor.bind('<Return>', lambda event: guardar_cambio())
+
+
+def mostrar_exito(tabla):
+    """
+    Ventana 5: Muestra mensaje de éxito y actualiza la vista
+    """
+    ventana_exito = tkinter.Toplevel(raiz)
+    ventana_exito.title("Éxito")
+    ventana_exito.geometry("350x200")
+    ventana_exito.grab_set()
+    
+    label_exito = tkinter.Label(ventana_exito, text="✓ Modificación realizada con éxito", 
+                  font=('Arial', 12, 'bold'), fg="green")
+    label_exito.pack(pady=40)
+    
+    def cerrar_y_actualizar():
+        ventana_exito.destroy()
+        LeerBaseDatos()  # Actualizar la vista de datos
+    
+    boton_aceptar = tkinter.Button(ventana_exito, text="Aceptar", command=cerrar_y_actualizar,
+                   bg="dodgerblue", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_aceptar.pack(pady=20)
+    
+    ventana_exito.bind('<Return>', lambda event: cerrar_y_actualizar())
+
+
+def BuscarTabla():
+    print("Ejemplo")
+>>>>>>> Stashed changes
 
 
 LeerBaseDatos()
