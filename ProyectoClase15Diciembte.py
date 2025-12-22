@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
-@author: pablo, subire, Mohammed, Fabian
+@author: Pablo, Adrian Subire, Mohammed, Fabian
 """
 import sqlite3
 import tkinter as tkinter

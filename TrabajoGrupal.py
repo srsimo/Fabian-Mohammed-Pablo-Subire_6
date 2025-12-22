@@ -3,7 +3,7 @@
 """
 Created on Thu Dec  4 17:57:50 2025
 <<<<<<< HEAD
-@author: pablo, subire, Mohammed, Fabian
+@author: Pablo, Adrian Subire, Mohammed, Fabian
 >>>>>>> 3ef513525c0a4c72ed2d644575e08bf105a20951
 """
 import sqlite3
