@@ -3,6 +3,8 @@
 Created on Thu Dec  4 17:57:50 2025
 @author: Pablo, Adrian Subire, Mohammed, Fabian
 """
+
+trees_por_tabla = {}
 import sqlite3
 import tkinter as tkinter
 from tkinter import ttk, messagebox
@@ -20,87 +22,92 @@ raiz.grid_columnconfigure(4, weight=1)
 
 
 def CrearTabla():
-    # Función interna para insertar datos (VENTANA 3)
-    def abrir_ventana_insertar_datos(nombre_tabla, campos_info, ventana_anterior):
-        ventana_anterior.destroy()
-        
-        ventana_datos = tkinter.Toplevel(raiz)
-        ventana_datos.title(f"Insertar datos en {nombre_tabla}")
-        ventana_datos.geometry("500x600")
-        
-        titulo = tkinter.Label(ventana_datos, text=f"Insertar datos en: {nombre_tabla}", font=('arial', 14, 'bold'))
-        titulo.pack(pady=10)
-        
-        frame_scroll = tkinter.Frame(ventana_datos)
-        frame_scroll.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        canvas = tkinter.Canvas(frame_scroll)
-        scrollbar = tkinter.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
-        frame_datos = tkinter.Frame(canvas)
-        
-        canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-        canvas.create_window((0, 0), window=frame_datos, anchor="nw")
-        
-        datos_entries = []
-        
-        # Crear inputs para cada campo (excepto el ID que es autoincremental)
-        for i, campo_info in enumerate(campos_info):
-            frame_dato = tkinter.Frame(frame_datos, relief="groove", bd=2)
-            frame_dato.pack(fill="x", padx=10, pady=5)
-            
-            tkinter.Label(frame_dato, text=f"{campo_info['nombre']} ({campo_info['tipo']}):", font=('arial', 11, 'bold')).pack(pady=5)
-            
-            entry_dato = tkinter.Entry(frame_dato, width=40, font=('arial', 10))
-            entry_dato.pack(pady=5, padx=10)
-            
-            datos_entries.append(entry_dato)
-        
-        frame_datos.update_idletasks()
-        canvas.configure(scrollregion=canvas.bbox("all"))
-        
-        def insertar_datos():
-            valores = []
-            for i, entry in enumerate(datos_entries):
-                valor = entry.get().strip()
-                # Permitir campos vacíos para tipos que lo permitan
-                valores.append(valor if valor else None)
-            
-            # Construir INSERT
-            columnas = ", ".join([c['nombre'] for c in campos_info])
-            placeholders = ", ".join(["?" for _ in valores])
-            sql = f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})"
-            
-            try:
-                cursor.execute(sql, valores)
-                conexion.commit()
-                print(f"Datos insertados en '{nombre_tabla}' exitosamente")
-                
-                # Limpiar los campos para permitir insertar más registros
-                for entry in datos_entries:
-                    entry.delete(0, 'end')
-                
-                print("Puedes insertar otro registro o cerrar la ventana")
-            except Exception as e:
-                print(f"Error al insertar: {e}")
-        
-        def finalizar():
-            ventana_datos.destroy()
-            LeerBaseDatos()
-        
-        # Botones
-        frame_botones = tkinter.Frame(ventana_datos)
-        frame_botones.pack(pady=10)
-        
-        btn_insertar = tkinter.Button(frame_botones, text="Insertar Registro", command=insertar_datos, bg="green", fg="white", font=('arial', 12))
-        btn_insertar.pack(side="left", padx=5)
-        
-        btn_finalizar = tkinter.Button(frame_botones, text="Finalizar", command=finalizar, bg="blue", fg="white", font=('arial', 12))
-        btn_finalizar.pack(side="left", padx=5)
+    # VENTANA INICIAL: Elegir entre crear tabla, añadir registro o añadir campo
+    ventana_seleccion = tkinter.Toplevel(raiz)
+    ventana_seleccion.title("Crear")
+    ventana_seleccion.geometry("450x400")
+    ventana_seleccion.grab_set()
     
-    # Función interna para la segunda ventana (VENTANA 2)
+    titulo = tkinter.Label(ventana_seleccion, text="¿Qué desea crear?", font=('arial', 16, 'bold'))
+    titulo.pack(pady=30)
+    
+    def crear_nueva_tabla():
+        ventana_seleccion.destroy()
+        ventana_crear_tabla()
+    
+    def añadir_registro():
+        ventana_seleccion.destroy()
+        ventana_seleccionar_tabla_registro()
+    
+    def añadir_campo():
+        ventana_seleccion.destroy()
+        ventana_seleccionar_tabla_campo()
+    
+    # Botones
+    frame_botones = tkinter.Frame(ventana_seleccion)
+    frame_botones.pack(pady=10)
+    
+    btn_tabla = tkinter.Button(frame_botones, text="Crear Nueva Tabla", 
+                               command=crear_nueva_tabla,
+                               bg="green", fg="white", 
+                               font=('arial', 12), width=25, height=2)
+    btn_tabla.pack(pady=8)
+    
+    btn_registro = tkinter.Button(frame_botones, text="Añadir Registro", 
+                                  command=añadir_registro,
+                                  bg="blue", fg="white", 
+                                  font=('arial', 12), width=25, height=2)
+    btn_registro.pack(pady=8)
+    
+    btn_campo = tkinter.Button(frame_botones, text="Añadir Campo a Tabla", 
+                               command=añadir_campo,
+                               bg="orange", fg="white", 
+                               font=('arial', 12), width=25, height=2)
+    btn_campo.pack(pady=8)
+    
+    # ============================================================================
+    # OPCIÓN 1: CREAR NUEVA TABLA
+    # ============================================================================
+    
+    def ventana_crear_tabla():
+        """Primera ventana para crear tabla"""
+        ventana_inicial = tkinter.Toplevel(raiz)
+        ventana_inicial.title("Crear Nueva Tabla")
+        ventana_inicial.geometry("400x300")
+        
+        titulo = tkinter.Label(ventana_inicial, text="Crear Nueva Tabla", font=('arial', 16, 'bold'))
+        titulo.pack(pady=20)
+        
+        frame_inputs = tkinter.Frame(ventana_inicial)
+        frame_inputs.pack(pady=20)
+        
+        tkinter.Label(frame_inputs, text="Nombre de la tabla:", font=('arial', 12)).grid(row=0, column=0, sticky="e", padx=10, pady=10)
+        entry_nombre_tabla = tkinter.Entry(frame_inputs, width=20, font=('arial', 12))
+        entry_nombre_tabla.grid(row=0, column=1, padx=10, pady=10)
+        
+        tkinter.Label(frame_inputs, text="Cantidad de campos:", font=('arial', 12)).grid(row=1, column=0, sticky="e", padx=10, pady=10)
+        entry_num_campos = tkinter.Entry(frame_inputs, width=20, font=('arial', 12))
+        entry_num_campos.grid(row=1, column=1, padx=10, pady=10)
+        
+        def continuar():
+            nombre_tabla = entry_nombre_tabla.get().strip()
+            num_campos_str = entry_num_campos.get().strip()
+            
+            if not nombre_tabla:
+                messagebox.showerror("Error", "Ingresa un nombre para la tabla")
+                return
+            
+            if not num_campos_str.isdigit() or int(num_campos_str) <= 0:
+                messagebox.showerror("Error", "La cantidad debe ser un número mayor a 0")
+                return
+            
+            abrir_ventana_campos(nombre_tabla, int(num_campos_str), ventana_inicial)
+        
+        btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", command=continuar, bg="dodgerblue", fg="white", font=('arial', 12))
+        btn_continuar.pack(pady=10)
+    
     def abrir_ventana_campos(nombre_tabla, num_campos, ventana_anterior):
+        """Segunda ventana: configurar campos"""
         ventana_anterior.destroy()  
         
         ventana_campos = tkinter.Toplevel(raiz)
@@ -147,79 +154,286 @@ def CrearTabla():
         
         def crear_tabla_bd():
             campos_sql = [f"id_{nombre_tabla} INTEGER PRIMARY KEY AUTOINCREMENT"]
-            campos_info = []  # Guardar info de campos para la siguiente ventana
+            campos_info = []
             
             for i, campo in enumerate(campos_entries):
                 nombre = campo['nombre'].get().strip()
                 tipo = campo['tipo'].get()
                 
                 if not nombre:
-                    print(f"Error: Campo {i+1} sin nombre")
+                    messagebox.showerror("Error", f"Campo {i+1} sin nombre")
                     return
                 
                 palabras_reservadas = ['as', 'select', 'from', 'where', 'table', 'order', 'group', 'by', 'create', 'insert', 'update', 'delete']
                 if nombre.lower() in palabras_reservadas:
-                    print(f"Error: '{nombre}' es una palabra reservada")
+                    messagebox.showerror("Error", f"'{nombre}' es una palabra reservada")
                     return
                 
                 campos_sql.append(f"{nombre} {tipo}")
                 campos_info.append({'nombre': nombre, 'tipo': tipo})
             
-            # CAMBIAR: usar CREATE TABLE (sin IF NOT EXISTS para evitar conflictos)
             sql = f"CREATE TABLE {nombre_tabla} ({', '.join(campos_sql)})"
             
             try:
                 cursor.execute(sql)
                 conexion.commit()
-                print(f"Tabla '{nombre_tabla}' creada exitosamente")
-                # Abrir ventana para insertar datos
-                abrir_ventana_insertar_datos(nombre_tabla, campos_info, ventana_campos)
+                messagebox.showinfo("Éxito", f"Tabla '{nombre_tabla}' creada exitosamente")
+                ventana_campos.destroy()
+                LeerBaseDatos()
             except Exception as e:
-                print(f"Error al crear tabla: {e}")
-                if "already exists" in str(e):
-                    print(f"La tabla '{nombre_tabla}' ya existe. Usa otro nombre.")
+                messagebox.showerror("Error", f"No se pudo crear la tabla: {e}")
         
-        # BOTÓN CREAR TABLA
         btn_crear = tkinter.Button(ventana_campos, text="Crear Tabla", command=crear_tabla_bd, bg="green", fg="white", font=('arial', 12))
         btn_crear.pack(pady=10)
     
-    # PRIMERA VENTANA
-    ventana_inicial = tkinter.Toplevel(raiz)
-    ventana_inicial.title("Crear Nueva Tabla")
-    ventana_inicial.geometry("400x300")
+    # ============================================================================
+    # OPCIÓN 2: AÑADIR REGISTRO A TABLA EXISTENTE
+    # ============================================================================
     
-    titulo = tkinter.Label(ventana_inicial, text="Crear Nueva Tabla", font=('arial', 16, 'bold'))
-    titulo.pack(pady=20)
-    
-    frame_inputs = tkinter.Frame(ventana_inicial)
-    frame_inputs.pack(pady=20)
-    
-    tkinter.Label(frame_inputs, text="Nombre de la tabla:", font=('arial', 12)).grid(row=0, column=0, sticky="e", padx=10, pady=10)
-    entry_nombre_tabla = tkinter.Entry(frame_inputs, width=20, font=('arial', 12))
-    entry_nombre_tabla.grid(row=0, column=1, padx=10, pady=10)
-    
-    tkinter.Label(frame_inputs, text="Cantidad de campos:", font=('arial', 12)).grid(row=1, column=0, sticky="e", padx=10, pady=10)
-    entry_num_campos = tkinter.Entry(frame_inputs, width=20, font=('arial', 12))
-    entry_num_campos.grid(row=1, column=1, padx=10, pady=10)
-    
-    def continuar():
-        nombre_tabla = entry_nombre_tabla.get().strip()
-        num_campos_str = entry_num_campos.get().strip()
+    def ventana_seleccionar_tabla_registro():
+        """Primera ventana: seleccionar tabla para añadir registro"""
+        ventana_tabla = tkinter.Toplevel(raiz)
+        ventana_tabla.title("Añadir Registro - Seleccionar Tabla")
+        ventana_tabla.geometry("400x300")
+        ventana_tabla.grab_set()
         
-        if not nombre_tabla:
-            print("Error: Ingresa un nombre para la tabla")
+        titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla:", font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ORDER BY name
+        """)
+        tablas = [tabla[0] for tabla in cursor.fetchall()]
+        
+        if not tablas:
+            messagebox.showwarning("Sin tablas", "No hay tablas disponibles. Crea una primero.")
+            ventana_tabla.destroy()
             return
         
-        if not num_campos_str.isdigit() or int(num_campos_str) <= 0:
-            print("Error: Cantidad debe ser un número mayor a 0")
+        combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('arial', 11), width=25)
+        combo_tabla.pack(pady=10)
+        combo_tabla.current(0)
+        
+        def continuar():
+            if not combo_tabla.get():
+                messagebox.showerror("Error", "Debe seleccionar una tabla")
+                return
+            
+            tabla_seleccionada = combo_tabla.get()
+            ventana_tabla.destroy()
+            abrir_ventana_insertar_registro(tabla_seleccionada)
+        
+        btn_continuar = tkinter.Button(ventana_tabla, text="Continuar", command=continuar,
+                                       bg="dodgerblue", fg="white", font=('arial', 12), width=15, height=2)
+        btn_continuar.pack(pady=20)
+    
+    def abrir_ventana_insertar_registro(nombre_tabla):
+        """Segunda ventana: formulario para insertar registro"""
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        info_columnas = cursor.fetchall()
+        
+        campos_info = []
+        for col in info_columnas:
+            if col[5] != 1:
+                campos_info.append({'nombre': col[1], 'tipo': col[2]})
+        
+        ventana_datos = tkinter.Toplevel(raiz)
+        ventana_datos.title(f"Añadir registro en {nombre_tabla}")
+        ventana_datos.geometry("500x650")
+        
+        titulo = tkinter.Label(ventana_datos, text=f"Añadir registro en: {nombre_tabla}", font=('arial', 14, 'bold'))
+        titulo.pack(pady=10)
+        
+        frame_scroll = tkinter.Frame(ventana_datos)
+        frame_scroll.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        canvas = tkinter.Canvas(frame_scroll)
+        scrollbar = tkinter.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
+        frame_datos = tkinter.Frame(canvas)
+        
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        canvas.create_window((0, 0), window=frame_datos, anchor="nw")
+        
+        datos_entries = []
+        
+        for i, campo_info in enumerate(campos_info):
+            frame_dato = tkinter.Frame(frame_datos, relief="groove", bd=2)
+            frame_dato.pack(fill="x", padx=10, pady=5)
+            
+            tkinter.Label(frame_dato, text=f"{campo_info['nombre']} ({campo_info['tipo']}):", font=('arial', 11, 'bold')).pack(pady=5)
+            
+            entry_dato = tkinter.Entry(frame_dato, width=40, font=('arial', 10))
+            entry_dato.pack(pady=5, padx=10)
+            
+            datos_entries.append(entry_dato)
+        
+        frame_datos.update_idletasks()
+        canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        def insertar_datos(cerrar=False):
+            valores = []
+            for entry in datos_entries:
+                valor = entry.get().strip()
+                valores.append(valor if valor else None)
+            
+            if all(v is None for v in valores):
+                messagebox.showwarning("Advertencia", "Debe ingresar al menos un dato")
+                return
+            
+            columnas = ", ".join([c['nombre'] for c in campos_info])
+            placeholders = ", ".join(["?" for _ in valores])
+            sql = f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})"
+            
+            try:
+                cursor.execute(sql, valores)
+                conexion.commit()
+                messagebox.showinfo("Éxito", f"Registro insertado exitosamente")
+                
+                if cerrar:
+                    ventana_datos.destroy()
+                    LeerBaseDatos()
+                else:
+                    for entry in datos_entries:
+                        entry.delete(0, 'end')
+                    datos_entries[0].focus()
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al insertar: {e}")
+        
+        frame_botones = tkinter.Frame(ventana_datos)
+        frame_botones.pack(pady=15)
+        
+        btn_insertar_otro = tkinter.Button(frame_botones, text="Insertar y Añadir Otro", 
+                                           command=lambda: insertar_datos(cerrar=False),
+                                           bg="green", fg="white", font=('arial', 11), 
+                                           width=20, height=2)
+        btn_insertar_otro.pack(side="left", padx=5)
+        
+        btn_insertar_cerrar = tkinter.Button(frame_botones, text="Insertar y Finalizar", 
+                                             command=lambda: insertar_datos(cerrar=True),
+                                             bg="blue", fg="white", font=('arial', 11), 
+                                             width=20, height=2)
+        btn_insertar_cerrar.pack(side="left", padx=5)
+    
+    # ============================================================================
+    # OPCIÓN 3: AÑADIR CAMPO A TABLA EXISTENTE
+    # ============================================================================
+    
+    def ventana_seleccionar_tabla_campo():
+        """Primera ventana: seleccionar tabla para añadir campo"""
+        ventana_tabla = tkinter.Toplevel(raiz)
+        ventana_tabla.title("Añadir Campo - Seleccionar Tabla")
+        ventana_tabla.geometry("400x300")
+        ventana_tabla.grab_set()
+        
+        titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla:", font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ORDER BY name
+        """)
+        tablas = [tabla[0] for tabla in cursor.fetchall()]
+        
+        if not tablas:
+            messagebox.showwarning("Sin tablas", "No hay tablas disponibles. Crea una primero.")
+            ventana_tabla.destroy()
             return
         
-        abrir_ventana_campos(nombre_tabla, int(num_campos_str), ventana_inicial)
+        combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('arial', 11), width=25)
+        combo_tabla.pack(pady=10)
+        combo_tabla.current(0)
+        
+        def continuar():
+            if not combo_tabla.get():
+                messagebox.showerror("Error", "Debe seleccionar una tabla")
+                return
+            
+            tabla_seleccionada = combo_tabla.get()
+            ventana_tabla.destroy()
+            ventana_añadir_campo(tabla_seleccionada)
+        
+        btn_continuar = tkinter.Button(ventana_tabla, text="Continuar", command=continuar,
+                                       bg="dodgerblue", fg="white", font=('arial', 12), width=15, height=2)
+        btn_continuar.pack(pady=20)
     
-    # BOTÓN CONTINUAR
-    btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", command=continuar, bg="dodgerblue", fg="white", font=('arial', 12))
-    btn_continuar.pack(pady=10)
-
+    def ventana_añadir_campo(nombre_tabla):
+        """Segunda ventana: configurar nuevo campo"""
+        ventana_campo = tkinter.Toplevel(raiz)
+        ventana_campo.title(f"Añadir campo a {nombre_tabla}")
+        ventana_campo.geometry("450x400")
+        ventana_campo.grab_set()
+        
+        titulo = tkinter.Label(ventana_campo, text=f"Añadir campo a tabla: {nombre_tabla}", 
+                              font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        # Mostrar campos existentes
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        columnas_existentes = cursor.fetchall()
+        
+        label_existentes = tkinter.Label(ventana_campo, text="Campos existentes:", 
+                                         font=('arial', 11, 'bold'))
+        label_existentes.pack(pady=10)
+        
+        frame_existentes = tkinter.Frame(ventana_campo, relief="groove", bd=2)
+        frame_existentes.pack(padx=20, pady=5)
+        
+        for col in columnas_existentes:
+            tkinter.Label(frame_existentes, text=f"• {col[1]} ({col[2]})", 
+                         font=('arial', 9)).pack(anchor='w', padx=10, pady=2)
+        
+        # Nuevo campo
+        frame_nuevo = tkinter.LabelFrame(ventana_campo, text="Nuevo Campo", font=('arial', 11))
+        frame_nuevo.pack(padx=20, pady=20, fill="x")
+        
+        tkinter.Label(frame_nuevo, text="Nombre del campo:", font=('arial', 10)).grid(row=0, column=0, sticky="e", padx=10, pady=10)
+        entry_nombre = tkinter.Entry(frame_nuevo, width=25, font=('arial', 10))
+        entry_nombre.grid(row=0, column=1, padx=10, pady=10)
+        
+        tkinter.Label(frame_nuevo, text="Tipo del campo:", font=('arial', 10)).grid(row=1, column=0, sticky="e", padx=10, pady=10)
+        combo_tipo = ttk.Combobox(frame_nuevo, width=23, state="readonly", font=('arial', 10))
+        combo_tipo['values'] = ('INTEGER', 'TEXT', 'REAL', 'BLOB', 'VARCHAR(50)', 'DATE', 'FLOAT')
+        combo_tipo.current(1)  # TEXT por defecto
+        combo_tipo.grid(row=1, column=1, padx=10, pady=10)
+        
+        def añadir_campo_bd():
+            nombre_campo = entry_nombre.get().strip()
+            tipo_campo = combo_tipo.get()
+            
+            if not nombre_campo:
+                messagebox.showerror("Error", "Debe ingresar un nombre para el campo")
+                return
+            
+            palabras_reservadas = ['as', 'select', 'from', 'where', 'table', 'order', 'group', 'by', 'create', 'insert', 'update', 'delete']
+            if nombre_campo.lower() in palabras_reservadas:
+                messagebox.showerror("Error", f"'{nombre_campo}' es una palabra reservada")
+                return
+            
+            # Verificar que no exista ya
+            if any(col[1].lower() == nombre_campo.lower() for col in columnas_existentes):
+                messagebox.showerror("Error", f"El campo '{nombre_campo}' ya existe en la tabla")
+                return
+            
+            sql = f"ALTER TABLE {nombre_tabla} ADD COLUMN {nombre_campo} {tipo_campo}"
+            
+            try:
+                cursor.execute(sql)
+                conexion.commit()
+                messagebox.showinfo("Éxito", f"Campo '{nombre_campo}' añadido exitosamente a '{nombre_tabla}'")
+                ventana_campo.destroy()
+                LeerBaseDatos()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo añadir el campo: {e}")
+        
+        btn_añadir = tkinter.Button(ventana_campo, text="Añadir Campo", command=añadir_campo_bd,
+                                    bg="orange", fg="white", font=('arial', 12), width=18, height=2)
+        btn_añadir.pack(pady=20)
 
 def BorrarTabla():
     # Función interna para confirmar eliminación (VENTANA 2)
@@ -642,7 +856,119 @@ def mostrar_exito(tabla):
 
 
 def BuscarTabla():
-    print("Ejemplo")
+    # 1) Ventana de búsqueda
+    ventana = tkinter.Toplevel(raiz)
+    ventana.title("Buscar en la base de datos")
+    ventana.geometry("520x260")
+    ventana.grab_set()
+
+    # 2) Obtener tablas
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tablas = [t[0] for t in cursor.fetchall()]
+
+    tkinter.Label(ventana, text="Tabla:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+    combo_tabla = ttk.Combobox(ventana, state="readonly", values=tablas)
+    combo_tabla.pack(fill="x", padx=12, pady=6)
+
+    tkinter.Label(ventana, text="Columna (opcional):", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+    combo_columna = ttk.Combobox(ventana, state="readonly")
+    combo_columna.pack(fill="x", padx=12, pady=6)
+
+    tkinter.Label(ventana, text="Texto a buscar:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+    entry_texto = tkinter.Entry(ventana)
+    entry_texto.pack(fill="x", padx=12, pady=6)
+
+    info = tkinter.Label(ventana, text="", fg="gray")
+    info.pack(pady=5)
+
+    def cargar_columnas(event=None):
+        tabla = combo_tabla.get()
+        if not tabla:
+            return
+        cursor.execute(f"PRAGMA table_info({tabla})")
+        cols = [c[1] for c in cursor.fetchall()]
+        combo_columna["values"] = ["(Todas)"] + cols
+        combo_columna.current(0)
+
+    def limpiar_tree(tree):
+        for item in tree.get_children():
+            tree.delete(item)
+
+    def mostrar_resultados(tabla, filas):
+        # Cambiar a la pestaña correcta y rellenar tree
+        tree = trees_por_tabla.get(tabla)
+        if tree is None:
+            messagebox.showerror("Error", f"No encuentro el Treeview de la tabla '{tabla}'.")
+            return
+
+        limpiar_tree(tree)
+        for fila in filas:
+            tree.insert("", "end", values=fila)
+
+        # Seleccionar la pestaña de esa tabla
+        for tab_id in notebook.tabs():
+            if notebook.tab(tab_id, "text").lower() == tabla.lower():
+                notebook.select(tab_id)
+                break
+
+    def buscar():
+        tabla = combo_tabla.get().strip()
+        col = combo_columna.get().strip()
+        texto = entry_texto.get().strip()
+
+        if not tabla:
+            messagebox.showerror("Error", "Selecciona una tabla.")
+            return
+
+        # Si texto vacío, mostrar todo
+        if texto == "":
+            cursor.execute(f"SELECT * FROM {tabla}")
+            filas = cursor.fetchall()
+            mostrar_resultados(tabla, filas)
+            info.config(text=f"Mostrando todo: {len(filas)} filas")
+            return
+
+        # columnas de la tabla
+        cursor.execute(f"PRAGMA table_info({tabla})")
+        cols = [c[1] for c in cursor.fetchall()]
+
+        # Si elige una sola columna
+        if col and col != "(Todas)":
+            sql = f"SELECT * FROM {tabla} WHERE CAST({col} AS TEXT) LIKE ?"
+            params = (f"%{texto}%",)
+        else:
+            # Buscar en todas las columnas
+            condiciones = " OR ".join([f"CAST({c} AS TEXT) LIKE ?" for c in cols])
+            sql = f"SELECT * FROM {tabla} WHERE {condiciones}"
+            params = tuple([f"%{texto}%"] * len(cols))
+
+        try:
+            cursor.execute(sql, params)
+            filas = cursor.fetchall()
+            mostrar_resultados(tabla, filas)
+            info.config(text=f"Resultados: {len(filas)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo buscar:\n{e}")
+
+    # Selección inicial
+    if tablas:
+        combo_tabla.current(0)
+        cargar_columnas()
+    combo_tabla.bind("<<ComboboxSelected>>", cargar_columnas)
+
+    frame_btn = tkinter.Frame(ventana)
+    frame_btn.pack(pady=10)
+
+    tkinter.Button(frame_btn, text="Buscar", command=buscar, bg="green", fg="white").pack(side="left", padx=6)
+    tkinter.Button(frame_btn, text="Cerrar", command=ventana.destroy).pack(side="left", padx=6)
+
+    entry_texto.focus()
+    ventana.bind("<Return>", lambda e: buscar())
+
 
 
 textoCrear = "Crear"
@@ -768,6 +1094,7 @@ def LeerBaseDatos():
         
         # 5. Crear el Treeview con las columnas dinámicas
         tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
+       
         
         # 6. Configurar los encabezados de las columnas
         for columna in nombres_columnas:
@@ -775,6 +1102,7 @@ def LeerBaseDatos():
             tree.column(columna, width=100)  # Opcional: ajustar ancho
         
         tree.pack(fill="both", expand=True)
+        trees_por_tabla[nombre_tabla] = tree
         
         # 7. Cargar los datos de la tabla
         cursor.execute(f"SELECT * FROM {nombre_tabla}")
