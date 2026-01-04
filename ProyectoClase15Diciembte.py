@@ -1307,6 +1307,260 @@ def BuscarTabla():
     entry_texto.focus()
     ventana.bind("<Return>", lambda e: buscar())
 
+def MostrarGrafico():
+    """
+    Función principal para crear gráficos desde las tablas
+    """
+    # Ventana 1: Seleccionar tabla
+    ventana_tabla = tkinter.Toplevel(raiz)
+    ventana_tabla.title("Gráfico - Seleccionar Tabla")
+    ventana_tabla.geometry("400x250")
+    ventana_tabla.grab_set()
+    
+    # Obtener lista de tablas
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tablas = [tabla[0] for tabla in cursor.fetchall()]
+    
+    label_titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla:", font=('Arial', 12, 'bold'))
+    label_titulo.pack(pady=20)
+    
+    combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('Arial', 11), width=25)
+    combo_tabla.pack(pady=10)
+    if tablas:
+        combo_tabla.current(0)
+    
+    def continuar():
+        if not combo_tabla.get():
+            messagebox.showerror("Error", "Debe seleccionar una tabla")
+            return
+        
+        tabla_seleccionada = combo_tabla.get()
+        ventana_tabla.destroy()
+        ventana_configurar_grafico(tabla_seleccionada)
+    
+    boton_siguiente = tkinter.Button(ventana_tabla, text="Siguiente", command=continuar, 
+                   bg="dodgerblue", fg="white", font=('Arial', 12), width=15, height=2)
+    boton_siguiente.pack(pady=30)
+    
+    ventana_tabla.bind('<Return>', lambda event: continuar())
+
+def ventana_configurar_grafico(tabla):
+    """
+    Ventana 2: Configurar tipo de gráfico y campos
+    """
+    ventana_config = tkinter.Toplevel(raiz)
+    ventana_config.title("Gráfico - Configuración")
+    ventana_config.geometry("550x650")  # Reducido un poco
+    ventana_config.grab_set()
+    
+    # Obtener columnas de la tabla
+    cursor.execute(f"PRAGMA table_info({tabla})")
+    columnas_info = cursor.fetchall()
+    campos = [col[1] for col in columnas_info]
+    tipos = {col[1]: col[2] for col in columnas_info}
+    
+    # Campos numéricos (para eje Y)
+    campos_numericos = [campo for campo in campos if 'INT' in tipos[campo].upper() 
+                       or 'FLOAT' in tipos[campo].upper() or 'REAL' in tipos[campo].upper()]
+    
+    label_titulo = tkinter.Label(ventana_config, text=f"Configurar gráfico de: {tabla}", 
+                                 font=('Arial', 13, 'bold'))
+    label_titulo.pack(pady=10)
+    
+    # Tipo de gráfico
+    frame_tipo = tkinter.LabelFrame(ventana_config, text="Tipo de Gráfico", font=('Arial', 11))
+    frame_tipo.pack(pady=5, padx=20, fill="x")
+    
+    tipo_grafico = tkinter.StringVar(value="barras")
+    
+    tkinter.Radiobutton(frame_tipo, text="📊 Gráfico de Barras", variable=tipo_grafico, 
+                       value="barras", font=('Arial', 10)).pack(anchor='w', padx=10, pady=3)
+    tkinter.Radiobutton(frame_tipo, text="📈 Gráfico de Líneas", variable=tipo_grafico, 
+                       value="lineas", font=('Arial', 10)).pack(anchor='w', padx=10, pady=3)
+    tkinter.Radiobutton(frame_tipo, text="🥧 Gráfico Circular (Pie)", variable=tipo_grafico, 
+                       value="circular", font=('Arial', 10)).pack(anchor='w', padx=10, pady=3)
+    tkinter.Radiobutton(frame_tipo, text="📉 Gráfico de Dispersión", variable=tipo_grafico, 
+                       value="dispersion", font=('Arial', 10)).pack(anchor='w', padx=10, pady=3)
+    
+    # Campo para eje X (etiquetas)
+    frame_x = tkinter.LabelFrame(ventana_config, text="Eje X (Etiquetas/Categorías)", font=('Arial', 11))
+    frame_x.pack(pady=5, padx=20, fill="x")
+    
+    label_x = tkinter.Label(frame_x, text="Seleccione el campo:", font=('Arial', 10))
+    label_x.pack(pady=3)
+    
+    combo_x = ttk.Combobox(frame_x, values=campos, state="readonly", font=('Arial', 10), width=30)
+    combo_x.pack(pady=3)
+    if campos:
+        combo_x.current(0)
+    
+    # Campo para eje Y (valores numéricos)
+    frame_y = tkinter.LabelFrame(ventana_config, text="Eje Y (Valores numéricos)", font=('Arial', 11))
+    frame_y.pack(pady=5, padx=20, fill="x")
+    
+    label_y = tkinter.Label(frame_y, text="Seleccione el campo:", font=('Arial', 10))
+    label_y.pack(pady=3)
+    
+    combo_y = ttk.Combobox(frame_y, values=campos_numericos, state="readonly", font=('Arial', 10), width=30)
+    combo_y.pack(pady=3)
+    if campos_numericos:
+        combo_y.current(0)
+    
+    # Opciones adicionales (SOLO ORDENAR)
+    frame_opciones = tkinter.LabelFrame(ventana_config, text="Opciones", font=('Arial', 11))
+    frame_opciones.pack(pady=5, padx=20, fill="x")
+    
+    var_ordenar = tkinter.IntVar()
+    check_ordenar = tkinter.Checkbutton(frame_opciones, text="Ordenar por valores (mayor a menor)", 
+                                        variable=var_ordenar, font=('Arial', 10))
+    check_ordenar.pack(pady=8, padx=10, anchor='w')
+    
+    # FUNCIÓN INTERNA: generar_grafico
+    def generar_grafico():
+        campo_x = combo_x.get()
+        campo_y = combo_y.get()
+        tipo = tipo_grafico.get()
+        
+        if not campo_x or not campo_y:
+            messagebox.showerror("Error", "Debe seleccionar ambos campos")
+            return
+        
+        ventana_config.destroy()
+        crear_y_mostrar_grafico(tabla, campo_x, campo_y, tipo, var_ordenar.get())
+    
+    boton_generar = tkinter.Button(ventana_config, text="Generar Gráfico", command=generar_grafico,
+                                   bg="green", fg="white", font=('Arial', 12), width=18, height=2)
+    boton_generar.pack(pady=20)
+    
+    ventana_config.bind('<Return>', lambda event: generar_grafico())
+
+
+def crear_y_mostrar_grafico(tabla, campo_x, campo_y, tipo_grafico, ordenar):
+    """
+    Crea el gráfico usando matplotlib y lo muestra en una ventana
+    """
+    try:
+        import matplotlib
+        matplotlib.use('Agg')  # IMPORTANTE: Backend sin ventana
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    except ImportError:
+        messagebox.showerror("Error", "Necesitas instalar matplotlib:\npip install matplotlib")
+        return
+    
+    # Obtener datos
+    sql = f"SELECT {campo_x}, {campo_y} FROM {tabla} WHERE {campo_y} IS NOT NULL"
+    
+    if ordenar:
+        sql += f" ORDER BY {campo_y} DESC"
+    
+    try:
+        cursor.execute(sql)
+        datos = cursor.fetchall()
+        
+        if not datos:
+            messagebox.showwarning("Sin datos", "No hay datos para generar el gráfico")
+            return
+        
+        # Separar en listas
+        etiquetas = [str(fila[0]) for fila in datos]
+        valores = [float(fila[1]) if fila[1] is not None else 0 for fila in datos]
+        
+        # Crear ventana para el gráfico
+        ventana_grafico = tkinter.Toplevel(raiz)
+        ventana_grafico.title(f"Gráfico - {tabla}")
+        
+        # Maximizar según el sistema operativo
+        try:
+            ventana_grafico.state('zoomed')  # Windows
+        except:
+            ventana_grafico.attributes('-zoomed', True)  # Linux
+        
+        # Frame superior con información
+        frame_info = tkinter.Frame(ventana_grafico)
+        frame_info.pack(fill="x", padx=10, pady=10)
+        
+        label_info = tkinter.Label(frame_info, 
+                                   text=f"Tabla: {tabla} | X: {campo_x} | Y: {campo_y}", 
+                                   font=('Arial', 11, 'bold'))
+        label_info.pack()
+        
+        # Crear figura de matplotlib
+        plt.close('all')  # Cerrar todas las figuras anteriores
+        fig = plt.figure(figsize=(14, 8))
+        ax = fig.add_subplot(111)
+        
+        # Generar el gráfico según el tipo
+        if tipo_grafico == "barras":
+            colores = plt.cm.viridis(range(len(valores)))
+            ax.bar(etiquetas, valores, color=colores, edgecolor='black', linewidth=0.5)
+            ax.set_xlabel(campo_x, fontsize=12, fontweight='bold')
+            ax.set_ylabel(campo_y, fontsize=12, fontweight='bold')
+            ax.set_title(f'Gráfico de Barras: {campo_y} por {campo_x}', fontsize=14, fontweight='bold')
+            plt.xticks(rotation=45, ha='right')
+            
+        elif tipo_grafico == "lineas":
+            ax.plot(etiquetas, valores, marker='o', linewidth=2, markersize=8, color='#2E86AB')
+            ax.set_xlabel(campo_x, fontsize=12, fontweight='bold')
+            ax.set_ylabel(campo_y, fontsize=12, fontweight='bold')
+            ax.set_title(f'Gráfico de Líneas: {campo_y} por {campo_x}', fontsize=14, fontweight='bold')
+            plt.xticks(rotation=45, ha='right')
+            ax.grid(True, alpha=0.3)
+            
+        elif tipo_grafico == "circular":
+            colores = plt.cm.Set3(range(len(valores)))
+            ax.pie(valores, labels=etiquetas, autopct='%1.1f%%', startangle=90, colors=colores)
+            ax.set_title(f'Gráfico Circular: {campo_y} por {campo_x}', fontsize=14, fontweight='bold')
+            
+        elif tipo_grafico == "dispersion":
+            indices = range(len(valores))
+            scatter = ax.scatter(indices, valores, s=150, alpha=0.6, c=valores, cmap='plasma', edgecolors='black')
+            ax.set_xticks(indices)
+            ax.set_xticklabels(etiquetas, rotation=45, ha='right')
+            ax.set_xlabel(campo_x, fontsize=12, fontweight='bold')
+            ax.set_ylabel(campo_y, fontsize=12, fontweight='bold')
+            ax.set_title(f'Gráfico de Dispersión: {campo_y} por {campo_x}', fontsize=14, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            plt.colorbar(scatter, ax=ax)
+        
+        plt.tight_layout()
+        
+        # Integrar matplotlib con tkinter
+        canvas = FigureCanvasTkAgg(fig, master=ventana_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Frame con botones
+        frame_botones = tkinter.Frame(ventana_grafico)
+        frame_botones.pack(pady=10)
+        
+        def guardar_grafico():
+            from tkinter import filedialog
+            archivo = filedialog.asksaveasfilename(defaultextension=".png",
+                                           filetypes=[("PNG", "*.png"), ("PDF", "*.pdf"), 
+                                                     ("SVG", "*.svg"), ("Todos", "*.*")])
+            if archivo:
+                fig.savefig(archivo, dpi=300, bbox_inches='tight')
+                messagebox.showinfo("Éxito", f"Gráfico guardado en:\n{archivo}")
+        
+        btn_guardar = tkinter.Button(frame_botones, text="💾 Guardar Gráfico", 
+                                     command=guardar_grafico, bg="blue", fg="white", 
+                                     font=('Arial', 11), width=20, height=2)
+        btn_guardar.pack(side="left", padx=5)
+        
+        btn_cerrar = tkinter.Button(frame_botones, text="✖ Cerrar", 
+                                    command=ventana_grafico.destroy, bg="red", fg="white", 
+                                    font=('Arial', 11), width=20, height=2)
+        btn_cerrar.pack(side="left", padx=5)
+        
+    except sqlite3.Error as e:
+        messagebox.showerror("Error de consulta", f"Error al obtener datos: {str(e)}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Error al crear gráfico: {str(e)}")
 
 
 textoCrear = "Crear"
@@ -1330,7 +1584,7 @@ botonBuscar.grid(row=0, column=3, sticky="ew")
 botonBuscar.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoGrafico = "Grafico"
-botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonGrafico = tkinter.Button(raiz, text=textoGrafico, command= MostrarGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
 botonGrafico.grid(row=0, column=4, sticky="ew")
 botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
 
