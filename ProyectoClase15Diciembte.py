@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec  4 17:57:50 2025
@@ -6,8 +5,7 @@ Created on Thu Dec  4 17:57:50 2025
 """
 import sqlite3
 import tkinter as tkinter
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 
 raiz = tkinter.Tk()
 raiz.title("UDUU")
@@ -19,7 +17,6 @@ raiz.grid_columnconfigure(1, weight=1)
 raiz.grid_columnconfigure(2, weight=1)
 raiz.grid_columnconfigure(3, weight=1)
 raiz.grid_columnconfigure(4, weight=1)
-
 
 
 def CrearTabla():
@@ -222,197 +219,163 @@ def CrearTabla():
     # BOTÓN CONTINUAR
     btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", command=continuar, bg="dodgerblue", fg="white", font=('arial', 12))
     btn_continuar.pack(pady=10)
-    
-    
-    
-    
-    
-
-
 
 
 def BorrarTabla():
-    print("Ejemplo")
-
-
-
-
-
-def EditarTabla():
-    print("Ejemplo")
+    # Función interna para confirmar eliminación (VENTANA 2)
+    def abrir_ventana_confirmacion(nombre_tabla, ventana_anterior):
+        ventana_anterior.destroy()
+        
+        ventana_confirmacion = tkinter.Toplevel(raiz)
+        ventana_confirmacion.title("Confirmar Eliminación")
+        ventana_confirmacion.geometry("500x300")
+        ventana_confirmacion.grab_set()
+        
+        # Mensaje de confirmación
+        mensaje1 = tkinter.Label(ventana_confirmacion, 
+                                text=f"¿Está seguro que desea eliminar la tabla '{nombre_tabla}'?", 
+                                font=('arial', 12, 'bold'))
+        mensaje1.pack(pady=20)
+        
+        mensaje2 = tkinter.Label(ventana_confirmacion, 
+                                text="Esta acción eliminará TODOS los datos de la tabla", 
+                                font=('arial', 11), fg="red")
+        mensaje2.pack(pady=5)
+        
+        mensaje3 = tkinter.Label(ventana_confirmacion, 
+                                text="y NO se puede deshacer.", 
+                                font=('arial', 11), fg="red")
+        mensaje3.pack(pady=5)
+        
+        # Mostrar información de la tabla
+        try:
+            cursor.execute(f"SELECT COUNT(*) FROM {nombre_tabla}")
+            num_registros = cursor.fetchone()[0]
+            
+            info = tkinter.Label(ventana_confirmacion, 
+                               text=f"La tabla contiene {num_registros} registro(s)", 
+                               font=('arial', 10, 'italic'))
+            info.pack(pady=15)
+        except:
+            pass
+        
+        def eliminar_tabla():
+            try:
+                cursor.execute(f"DROP TABLE {nombre_tabla}")
+                conexion.commit()
+                print(f"Tabla '{nombre_tabla}' eliminada exitosamente")
+                ventana_confirmacion.destroy()
+                mostrar_exito_borrado(nombre_tabla)
+            except Exception as e:
+                print(f"Error al eliminar tabla: {e}")
+                messagebox.showerror("Error", f"No se pudo eliminar la tabla: {e}")
+        
+        def cancelar():
+            ventana_confirmacion.destroy()
+            print("Operación cancelada")
+        
+        # Botones
+        frame_botones = tkinter.Frame(ventana_confirmacion)
+        frame_botones.pack(pady=30)
+        
+        btn_cancelar = tkinter.Button(frame_botones, text="Cancelar", 
+                                      command=cancelar, 
+                                      bg="gray", fg="white", 
+                                      font=('arial', 12), width=15, height=2)
+        btn_cancelar.pack(side="left", padx=10)
+        
+        btn_eliminar = tkinter.Button(frame_botones, text="Eliminar Tabla", 
+                                     command=eliminar_tabla, 
+                                     bg="red", fg="white", 
+                                     font=('arial', 12), width=15, height=2)
+        btn_eliminar.pack(side="left", padx=10)
+        
+        ventana_confirmacion.bind('<Escape>', lambda event: cancelar())
     
+    def mostrar_exito_borrado(nombre_tabla):
+        ventana_exito = tkinter.Toplevel(raiz)
+        ventana_exito.title("Tabla Eliminada")
+        ventana_exito.geometry("400x200")
+        ventana_exito.grab_set()
+        
+        titulo = tkinter.Label(ventana_exito, 
+                              text=f"✓ Tabla '{nombre_tabla}' eliminada con éxito", 
+                              font=('arial', 12, 'bold'), fg="green")
+        titulo.pack(pady=40)
+        
+        def cerrar():
+            ventana_exito.destroy()
+            LeerBaseDatos()  # Actualizar la vista
+        
+        btn_aceptar = tkinter.Button(ventana_exito, text="Aceptar", 
+                                     command=cerrar, 
+                                     bg="dodgerblue", fg="white", 
+                                     font=('arial', 12), width=15, height=2)
+        btn_aceptar.pack(pady=20)
+        
+        ventana_exito.bind('<Return>', lambda event: cerrar())
     
+    # PRIMERA VENTANA: Seleccionar tabla a eliminar
+    ventana_inicial = tkinter.Toplevel(raiz)
+    ventana_inicial.title("Eliminar Tabla")
+    ventana_inicial.geometry("400x300")
+    ventana_inicial.grab_set()
     
+    titulo = tkinter.Label(ventana_inicial, text="Eliminar Tabla", 
+                          font=('arial', 16, 'bold'))
+    titulo.pack(pady=20)
     
-    
-    
-    
-    
-    
-def BuscarTabla():
-    print("Ejemplo")
-
-
-textoCrear = "Crear"
-botonCrear = tkinter.Button(raiz, text=textoCrear, command=CrearTabla, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
-
-# Crear botones
-textoCrear = "Crear"
-botonCrear = tkinter.Button(raiz, text=textoCrear, command=lambda: CrearTabla(), 
-                            relief="solid", bd=1, highlightbackground="black", 
-                            highlightthickness=1)
-
-botonCrear.grid(row=0, column=0, sticky="ew")
-botonCrear.config(fg="white", bg="dodgerblue", font=('arial',15))
-
-textoBorrar = "Eliminar"
-botonBorrar = tkinter.Button(raiz, text=textoBorrar, command=lambda: BorrarTabla(),
-                             relief="solid", bd=1, highlightbackground="black", 
-                             highlightthickness=1)
-botonBorrar.grid(row=0, column=1, sticky="ew")
-botonBorrar.config(fg="white", bg="dodgerblue", font=('arial',15))
-
-textoEditar = "Editar"
-botonEditar = tkinter.Button(raiz, text=textoEditar, command=lambda: EditarTabla(),
-                             relief="solid", bd=1, highlightbackground="black", 
-                             highlightthickness=1)
-botonEditar.grid(row=0, column=2, sticky="ew")
-botonEditar.config(fg="white", bg="dodgerblue", font=('arial',15))
-
-textoBuscar = "Buscar"
-botonBuscar = tkinter.Button(raiz, text=textoBuscar, command=lambda: BuscarTabla(),
-                             relief="solid", bd=1, highlightbackground="black", 
-                             highlightthickness=1)
-botonBuscar.grid(row=0, column=3, sticky="ew")
-botonBuscar.config(fg="white", bg="dodgerblue", font=('arial',15))
-
-textoGrafico = "Grafico"
-botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, 
-                              highlightbackground="black", highlightthickness=1)
-botonGrafico.grid(row=0, column=4, sticky="ew")
-botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
-
-# Conexión a la base de datos
-conexion = sqlite3.connect("supermercado.db")
-cursor = conexion.cursor()
-
-# Activar claves foráneas en SQLite
-cursor.execute("PRAGMA foreign_keys = ON")
-
-# Crear tabla categoria (debe ir primero porque producto la referencia)
-cursor.execute("CREATE TABLE IF NOT EXISTS categoria(id_Categoria INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Categoria VARCHAR(20))")
-
-# Crear tabla cliente (debe ir antes de pedido porque pedido la referencia)
-cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Cliente VARCHAR(20), apellido_Cliente VARCHAR(20), direccion VARCHAR(50), correo VARCHAR(50))")
-
-# Crear tabla producto
-cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
-    id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
-    id_Categoria INTEGER,
-    precio FLOAT,
-    stock INTEGER,
-    FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria)
-)""")
-
-# Crear tabla pedido (debe ir al final porque referencia a cliente y producto)
-cursor.execute("""CREATE TABLE IF NOT EXISTS pedido(
-    id_Pedido INTEGER PRIMARY KEY AUTOINCREMENT, 
-    id_Cliente INTEGER,
-    id_Producto INTEGER,
-    fecha_Pedido DATE,
-    cantidad INTEGER,
-    precio_Total FLOAT,
-    FOREIGN KEY (id_Cliente) REFERENCES cliente(id_Cliente),
-    FOREIGN KEY (id_Producto) REFERENCES producto(id_Producto)
-)""")
-
-cursor.execute("SELECT COUNT(*) FROM categoria")
-if cursor.fetchone()[0] == 0:
-    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Frutas')")
-    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Lacteos')")
-    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Carnes')")
-    
-    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Juan', 'Perez', 'Calle Mayor 10', 'juan@email.com')")
-    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Maria', 'Garcia', 'Avenida Sol 25', 'maria@email.com')")
-    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Carlos', 'Lopez', 'Plaza Luna 5', 'carlos@email.com')")
-    
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (1, 2.50, 100)")
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (2, 1.80, 50)")
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (3, 8.99, 30)")
-    
-    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (1, 1, '2025-12-11', 5, 12.50)")
-    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (2, 2, '2025-12-11', 3, 5.40)")
-    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (3, 3, '2025-12-10', 2, 17.98)")
-
-# Guardar cambios
-conexion.commit()
-
-# Crear Notebook para pestañas (tabs)
-notebook = ttk.Notebook(raiz)
-notebook.grid(row=1, column=0, columnspan=5, sticky="nsew", padx=10, pady=10)
-
-# Configurar que la fila 1 se expanda
-raiz.grid_rowconfigure(1, weight=1)
-
-
-def LeerBaseDatos():
-
-    # LIMPIAR PESTAÑAS EXISTENTES ANTES DE CARGAR
-    for tab in notebook.tabs():
-        notebook.forget(tab)
-    
-    # ============================================================================
-    # PARTE DINÁMICA: Obtener todas las tablas y mostrarlas automáticamente
-    # ============================================================================
-
-    # 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
-
-    # Limpiar pestañas existentes
-    for tab in notebook.tabs():
-        notebook.forget(tab)
-    
-    # Obtener todas las tablas de la base de datos
-
+    # Obtener lista de tablas
     cursor.execute("""
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
         ORDER BY name
     """)
-    tablas = cursor.fetchall()
-
-    for tabla_tupla in tablas:
-        nombre_tabla = tabla_tupla[0]
+    tablas = [tabla[0] for tabla in cursor.fetchall()]
+    
+    if not tablas:
+        mensaje_error = tkinter.Label(ventana_inicial, 
+                                     text="No hay tablas disponibles para eliminar", 
+                                     font=('arial', 11), fg="red")
+        mensaje_error.pack(pady=20)
         
-        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
-        info_columnas = cursor.fetchall()
+        btn_cerrar = tkinter.Button(ventana_inicial, text="Cerrar", 
+                                   command=ventana_inicial.destroy, 
+                                   bg="gray", fg="white", 
+                                   font=('arial', 12))
+        btn_cerrar.pack(pady=20)
+        return
+    
+    frame_seleccion = tkinter.Frame(ventana_inicial)
+    frame_seleccion.pack(pady=20)
+    
+    tkinter.Label(frame_seleccion, text="Seleccione la tabla a eliminar:", 
+                 font=('arial', 12)).pack(pady=10)
+    
+    combo_tabla = ttk.Combobox(frame_seleccion, values=tablas, 
+                               state="readonly", font=('arial', 11), width=25)
+    combo_tabla.pack(pady=10)
+    if tablas:
+        combo_tabla.current(0)
+    
+    def continuar():
+        tabla_seleccionada = combo_tabla.get()
         
-        nombres_columnas = [col[1] for col in info_columnas]
+        if not tabla_seleccionada:
+            messagebox.showerror("Error", "Debe seleccionar una tabla")
+            return
         
-        frame = tkinter.Frame(notebook)
-        notebook.add(frame, text=nombre_tabla.capitalize())
-        
-        tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
-        
-        for columna in nombres_columnas:
-            tree.heading(columna, text=columna)
-            tree.column(columna, width=100)
-        
-        tree.pack(fill="both", expand=True)
-        
-        cursor.execute(f"SELECT * FROM {nombre_tabla}")
-        filas = cursor.fetchall()
-        
-        for fila in filas:
-            tree.insert("", "end", values=fila)
-
-
-
-def CrearTabla():
-    print("Ejemplo")
-
-
-def BorrarTabla():
-    print("Ejemplo")
+        abrir_ventana_confirmacion(tabla_seleccionada, ventana_inicial)
+    
+    # BOTÓN CONTINUAR
+    btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", 
+                                   command=continuar, 
+                                   bg="dodgerblue", fg="white", 
+                                   font=('arial', 12), width=15, height=2)
+    btn_continuar.pack(pady=20)
+    
+    ventana_inicial.bind('<Return>', lambda event: continuar())
+    ventana_inicial.bind('<Escape>', lambda event: ventana_inicial.destroy())
 
 
 def EditarTabla():
@@ -681,6 +644,144 @@ def mostrar_exito(tabla):
 def BuscarTabla():
     print("Ejemplo")
 
+
+textoCrear = "Crear"
+botonCrear = tkinter.Button(raiz, text=textoCrear, command=CrearTabla, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonCrear.grid(row=0, column=0, sticky="ew")
+botonCrear.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+textoBorrar = "Eliminar"
+botonBorrar = tkinter.Button(raiz, text=textoBorrar,  command=BorrarTabla,relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonBorrar.grid(row=0, column=1, sticky="ew")
+botonBorrar.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+textoEditar = "Editar"
+botonEditar = tkinter.Button(raiz, text=textoEditar, command=EditarTabla, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonEditar.grid(row=0, column=2, sticky="ew")
+botonEditar.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+textoBuscar = "Buscar"
+botonBuscar = tkinter.Button(raiz, text=textoBuscar,  command=BuscarTabla,relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonBuscar.grid(row=0, column=3, sticky="ew")
+botonBuscar.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+textoGrafico = "Grafico"
+botonGrafico = tkinter.Button(raiz, text=textoGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonGrafico.grid(row=0, column=4, sticky="ew")
+botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
+
+# Conexión a la base de datos
+conexion = sqlite3.connect("supermercado.db")
+cursor = conexion.cursor()
+
+# Activar claves foráneas en SQLite
+cursor.execute("PRAGMA foreign_keys = ON")
+
+# Crear tabla categoria (debe ir primero porque producto la referencia)
+cursor.execute("CREATE TABLE IF NOT EXISTS categoria(id_Categoria INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Categoria VARCHAR(20))")
+
+# Crear tabla cliente (debe ir antes de pedido porque pedido la referencia)
+cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente INTEGER PRIMARY KEY AUTOINCREMENT, nombre_Cliente VARCHAR(20), apellido_Cliente VARCHAR(20), direccion VARCHAR(50), correo VARCHAR(50))")
+
+# Crear tabla producto
+cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
+    id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
+    id_Categoria INTEGER,
+    precio FLOAT,
+    stock INTEGER,
+    FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria)
+)""")
+
+# Crear tabla pedido (debe ir al final porque referencia a cliente y producto)
+cursor.execute("""CREATE TABLE IF NOT EXISTS pedido(
+    id_Pedido INTEGER PRIMARY KEY AUTOINCREMENT, 
+    id_Cliente INTEGER,
+    id_Producto INTEGER,
+    fecha_Pedido DATE,
+    cantidad INTEGER,
+    precio_Total FLOAT,
+    FOREIGN KEY (id_Cliente) REFERENCES cliente(id_Cliente),
+    FOREIGN KEY (id_Producto) REFERENCES producto(id_Producto)
+)""")
+
+cursor.execute("SELECT COUNT(*) FROM categoria")
+if cursor.fetchone()[0] == 0:
+    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Frutas')")
+    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Lacteos')")
+    cursor.execute("INSERT INTO categoria (nombre_Categoria) VALUES ('Carnes')")
+    
+    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Juan', 'Perez', 'Calle Mayor 10', 'juan@email.com')")
+    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Maria', 'Garcia', 'Avenida Sol 25', 'maria@email.com')")
+    cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Carlos', 'Lopez', 'Plaza Luna 5', 'carlos@email.com')")
+    
+    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (1, 2.50, 100)")
+    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (2, 1.80, 50)")
+    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (3, 8.99, 30)")
+    
+    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (1, 1, '2025-12-11', 5, 12.50)")
+    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (2, 2, '2025-12-11', 3, 5.40)")
+    cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (3, 3, '2025-12-10', 2, 17.98)")
+
+# Guardar cambios
+conexion.commit()
+
+# Crear Notebook para pestañas (tabs)
+notebook = ttk.Notebook(raiz)
+notebook.grid(row=1, column=0, columnspan=5, sticky="nsew", padx=10, pady=10)
+
+# Configurar que la fila 1 se expanda
+raiz.grid_rowconfigure(1, weight=1)
+
+
+def LeerBaseDatos():
+    # LIMPIAR PESTAÑAS EXISTENTES ANTES DE CARGAR
+    for tab in notebook.tabs():
+        notebook.forget(tab)
+    
+    # ============================================================================
+    # PARTE DINÁMICA: Obtener todas las tablas y mostrarlas automáticamente
+    # ============================================================================
+
+    # 1. Obtener todas las tablas de la base de datos (excepto las tablas del sistema de SQLite)
+    cursor.execute("""
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+    """)
+    tablas = cursor.fetchall()  # Devuelve una lista de tuplas: [('categoria',), ('cliente',), ...]
+
+    # 2. Para cada tabla encontrada, crear una pestaña con su Treeview
+    for tabla_tupla in tablas:
+        nombre_tabla = tabla_tupla[0]  # Extraer el nombre de la tabla de la tupla
+        
+        # 3. Obtener las columnas de esta tabla usando PRAGMA
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        info_columnas = cursor.fetchall()  # Devuelve info de cada columna
+        # info_columnas es algo como: [(0, 'id_Categoria', 'INTEGER', 0, None, 1), (1, 'nombre_Categoria', 'VARCHAR(20)', 0, None, 0)]
+        
+        # Extraer solo los nombres de las columnas (índice 1 de cada tupla)
+        nombres_columnas = [col[1] for col in info_columnas]
+        
+        # 4. Crear el frame para esta tabla
+        frame = tkinter.Frame(notebook)
+        notebook.add(frame, text=nombre_tabla.capitalize())  # Añadir pestaña con nombre de tabla
+        
+        # 5. Crear el Treeview con las columnas dinámicas
+        tree = ttk.Treeview(frame, columns=nombres_columnas, show="headings")
+        
+        # 6. Configurar los encabezados de las columnas
+        for columna in nombres_columnas:
+            tree.heading(columna, text=columna)  # Poner el nombre de la columna como encabezado
+            tree.column(columna, width=100)  # Opcional: ajustar ancho
+        
+        tree.pack(fill="both", expand=True)
+        
+        # 7. Cargar los datos de la tabla
+        cursor.execute(f"SELECT * FROM {nombre_tabla}")
+        filas = cursor.fetchall()
+        
+        for fila in filas:
+            tree.insert("", "end", values=fila)
 
 
 LeerBaseDatos()
