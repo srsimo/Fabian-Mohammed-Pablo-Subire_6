@@ -436,8 +436,117 @@ def CrearTabla():
         btn_añadir.pack(pady=20)
 
 def BorrarTabla():
-    # Función interna para confirmar eliminación (VENTANA 2)
-    def abrir_ventana_confirmacion(nombre_tabla, ventana_anterior):
+    # VENTANA INICIAL: Elegir qué borrar
+    ventana_seleccion = tkinter.Toplevel(raiz)
+    ventana_seleccion.title("Eliminar")
+    ventana_seleccion.geometry("450x400")
+    ventana_seleccion.grab_set()
+    
+    titulo = tkinter.Label(ventana_seleccion, text="¿Qué desea eliminar?", font=('arial', 16, 'bold'))
+    titulo.pack(pady=30)
+    
+    def borrar_tabla():
+        ventana_seleccion.destroy()
+        ventana_borrar_tabla()
+    
+    def borrar_registro():
+        ventana_seleccion.destroy()
+        ventana_seleccionar_tabla_registro()
+    
+    def borrar_campo():
+        ventana_seleccion.destroy()
+        ventana_seleccionar_tabla_campo()
+    
+    # Botones
+    frame_botones = tkinter.Frame(ventana_seleccion)
+    frame_botones.pack(pady=10)
+    
+    btn_tabla = tkinter.Button(frame_botones, text="Eliminar Tabla Completa", 
+                               command=borrar_tabla,
+                               bg="red", fg="white", 
+                               font=('arial', 12), width=25, height=2)
+    btn_tabla.pack(pady=8)
+    
+    btn_registro = tkinter.Button(frame_botones, text="Eliminar Registro", 
+                                  command=borrar_registro,
+                                  bg="orange", fg="white", 
+                                  font=('arial', 12), width=25, height=2)
+    btn_registro.pack(pady=8)
+    
+    btn_campo = tkinter.Button(frame_botones, text="Eliminar Campo de Tabla", 
+                               command=borrar_campo,
+                               bg="dodgerblue", fg="white", 
+                               font=('arial', 12), width=25, height=2)
+    btn_campo.pack(pady=8)
+    
+    # ============================================================================
+    # OPCIÓN 1: ELIMINAR TABLA COMPLETA
+    # ============================================================================
+    
+    def ventana_borrar_tabla():
+        """Primera ventana: seleccionar tabla a eliminar"""
+        ventana_inicial = tkinter.Toplevel(raiz)
+        ventana_inicial.title("Eliminar Tabla")
+        ventana_inicial.geometry("400x300")
+        ventana_inicial.grab_set()
+        
+        titulo = tkinter.Label(ventana_inicial, text="Eliminar Tabla", 
+                              font=('arial', 16, 'bold'))
+        titulo.pack(pady=20)
+        
+        # Obtener lista de tablas
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ORDER BY name
+        """)
+        tablas = [tabla[0] for tabla in cursor.fetchall()]
+        
+        if not tablas:
+            mensaje_error = tkinter.Label(ventana_inicial, 
+                                         text="No hay tablas disponibles para eliminar", 
+                                         font=('arial', 11), fg="red")
+            mensaje_error.pack(pady=20)
+            
+            btn_cerrar = tkinter.Button(ventana_inicial, text="Cerrar", 
+                                       command=ventana_inicial.destroy, 
+                                       bg="gray", fg="white", 
+                                       font=('arial', 12))
+            btn_cerrar.pack(pady=20)
+            return
+        
+        frame_seleccion = tkinter.Frame(ventana_inicial)
+        frame_seleccion.pack(pady=20)
+        
+        tkinter.Label(frame_seleccion, text="Seleccione la tabla a eliminar:", 
+                     font=('arial', 12)).pack(pady=10)
+        
+        combo_tabla = ttk.Combobox(frame_seleccion, values=tablas, 
+                                   state="readonly", font=('arial', 11), width=25)
+        combo_tabla.pack(pady=10)
+        if tablas:
+            combo_tabla.current(0)
+        
+        def continuar():
+            tabla_seleccionada = combo_tabla.get()
+            
+            if not tabla_seleccionada:
+                messagebox.showerror("Error", "Debe seleccionar una tabla")
+                return
+            
+            abrir_ventana_confirmacion_tabla(tabla_seleccionada, ventana_inicial)
+        
+        btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", 
+                                       command=continuar, 
+                                       bg="dodgerblue", fg="white", 
+                                       font=('arial', 12), width=15, height=2)
+        btn_continuar.pack(pady=20)
+        
+        ventana_inicial.bind('<Return>', lambda event: continuar())
+        ventana_inicial.bind('<Escape>', lambda event: ventana_inicial.destroy())
+    
+    def abrir_ventana_confirmacion_tabla(nombre_tabla, ventana_anterior):
+        """Segunda ventana: confirmar eliminación de tabla"""
         ventana_anterior.destroy()
         
         ventana_confirmacion = tkinter.Toplevel(raiz)
@@ -445,7 +554,6 @@ def BorrarTabla():
         ventana_confirmacion.geometry("500x300")
         ventana_confirmacion.grab_set()
         
-        # Mensaje de confirmación
         mensaje1 = tkinter.Label(ventana_confirmacion, 
                                 text=f"¿Está seguro que desea eliminar la tabla '{nombre_tabla}'?", 
                                 font=('arial', 12, 'bold'))
@@ -461,7 +569,6 @@ def BorrarTabla():
                                 font=('arial', 11), fg="red")
         mensaje3.pack(pady=5)
         
-        # Mostrar información de la tabla
         try:
             cursor.execute(f"SELECT COUNT(*) FROM {nombre_tabla}")
             num_registros = cursor.fetchone()[0]
@@ -477,18 +584,15 @@ def BorrarTabla():
             try:
                 cursor.execute(f"DROP TABLE {nombre_tabla}")
                 conexion.commit()
-                print(f"Tabla '{nombre_tabla}' eliminada exitosamente")
+                messagebox.showinfo("Éxito", f"Tabla '{nombre_tabla}' eliminada exitosamente")
                 ventana_confirmacion.destroy()
-                mostrar_exito_borrado(nombre_tabla)
+                LeerBaseDatos()
             except Exception as e:
-                print(f"Error al eliminar tabla: {e}")
                 messagebox.showerror("Error", f"No se pudo eliminar la tabla: {e}")
         
         def cancelar():
             ventana_confirmacion.destroy()
-            print("Operación cancelada")
         
-        # Botones
         frame_botones = tkinter.Frame(ventana_confirmacion)
         frame_botones.pack(pady=30)
         
@@ -506,91 +610,321 @@ def BorrarTabla():
         
         ventana_confirmacion.bind('<Escape>', lambda event: cancelar())
     
-    def mostrar_exito_borrado(nombre_tabla):
-        ventana_exito = tkinter.Toplevel(raiz)
-        ventana_exito.title("Tabla Eliminada")
-        ventana_exito.geometry("400x200")
-        ventana_exito.grab_set()
+    # ============================================================================
+    # OPCIÓN 2: ELIMINAR REGISTRO
+    # ============================================================================
+    
+    def ventana_seleccionar_tabla_registro():
+        """Primera ventana: seleccionar tabla para eliminar registro"""
+        ventana_tabla = tkinter.Toplevel(raiz)
+        ventana_tabla.title("Eliminar Registro - Seleccionar Tabla")
+        ventana_tabla.geometry("400x300")
+        ventana_tabla.grab_set()
         
-        titulo = tkinter.Label(ventana_exito, 
-                              text=f"✓ Tabla '{nombre_tabla}' eliminada con éxito", 
-                              font=('arial', 12, 'bold'), fg="green")
-        titulo.pack(pady=40)
+        titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla:", font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
         
-        def cerrar():
-            ventana_exito.destroy()
-            LeerBaseDatos()  # Actualizar la vista
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ORDER BY name
+        """)
+        tablas = [tabla[0] for tabla in cursor.fetchall()]
         
-        btn_aceptar = tkinter.Button(ventana_exito, text="Aceptar", 
-                                     command=cerrar, 
-                                     bg="dodgerblue", fg="white", 
-                                     font=('arial', 12), width=15, height=2)
-        btn_aceptar.pack(pady=20)
-        
-        ventana_exito.bind('<Return>', lambda event: cerrar())
-    
-    # PRIMERA VENTANA: Seleccionar tabla a eliminar
-    ventana_inicial = tkinter.Toplevel(raiz)
-    ventana_inicial.title("Eliminar Tabla")
-    ventana_inicial.geometry("400x300")
-    ventana_inicial.grab_set()
-    
-    titulo = tkinter.Label(ventana_inicial, text="Eliminar Tabla", 
-                          font=('arial', 16, 'bold'))
-    titulo.pack(pady=20)
-    
-    # Obtener lista de tablas
-    cursor.execute("""
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name NOT LIKE 'sqlite_%'
-        ORDER BY name
-    """)
-    tablas = [tabla[0] for tabla in cursor.fetchall()]
-    
-    if not tablas:
-        mensaje_error = tkinter.Label(ventana_inicial, 
-                                     text="No hay tablas disponibles para eliminar", 
-                                     font=('arial', 11), fg="red")
-        mensaje_error.pack(pady=20)
-        
-        btn_cerrar = tkinter.Button(ventana_inicial, text="Cerrar", 
-                                   command=ventana_inicial.destroy, 
-                                   bg="gray", fg="white", 
-                                   font=('arial', 12))
-        btn_cerrar.pack(pady=20)
-        return
-    
-    frame_seleccion = tkinter.Frame(ventana_inicial)
-    frame_seleccion.pack(pady=20)
-    
-    tkinter.Label(frame_seleccion, text="Seleccione la tabla a eliminar:", 
-                 font=('arial', 12)).pack(pady=10)
-    
-    combo_tabla = ttk.Combobox(frame_seleccion, values=tablas, 
-                               state="readonly", font=('arial', 11), width=25)
-    combo_tabla.pack(pady=10)
-    if tablas:
-        combo_tabla.current(0)
-    
-    def continuar():
-        tabla_seleccionada = combo_tabla.get()
-        
-        if not tabla_seleccionada:
-            messagebox.showerror("Error", "Debe seleccionar una tabla")
+        if not tablas:
+            messagebox.showwarning("Sin tablas", "No hay tablas disponibles.")
+            ventana_tabla.destroy()
             return
         
-        abrir_ventana_confirmacion(tabla_seleccionada, ventana_inicial)
+        combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('arial', 11), width=25)
+        combo_tabla.pack(pady=10)
+        combo_tabla.current(0)
+        
+        def continuar():
+            if not combo_tabla.get():
+                messagebox.showerror("Error", "Debe seleccionar una tabla")
+                return
+            
+            tabla_seleccionada = combo_tabla.get()
+            ventana_tabla.destroy()
+            ventana_seleccionar_id_registro(tabla_seleccionada)
+        
+        btn_continuar = tkinter.Button(ventana_tabla, text="Continuar", command=continuar,
+                                       bg="dodgerblue", fg="white", font=('arial', 12), width=15, height=2)
+        btn_continuar.pack(pady=20)
+        
+        ventana_tabla.bind('<Return>', lambda event: continuar())
     
-    # BOTÓN CONTINUAR
-    btn_continuar = tkinter.Button(ventana_inicial, text="Continuar", 
-                                   command=continuar, 
-                                   bg="dodgerblue", fg="white", 
-                                   font=('arial', 12), width=15, height=2)
-    btn_continuar.pack(pady=20)
+    def ventana_seleccionar_id_registro(nombre_tabla):
+        """Segunda ventana: ingresar ID del registro a eliminar y eliminarlo directamente"""
+        ventana_id = tkinter.Toplevel(raiz)
+        ventana_id.title("Eliminar Registro - Ingresar ID")
+        ventana_id.geometry("450x400")
+        ventana_id.grab_set()
+        
+        # Obtener primary key
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        columnas_info = cursor.fetchall()
+        pk_columna = None
+        for col in columnas_info:
+            if col[5] == 1:  # pk flag
+                pk_columna = col[1]
+                break
+        
+        # Si no se encuentra primary key, usar la primera columna
+        if pk_columna is None and columnas_info:
+            pk_columna = columnas_info[0][1]
+        
+        titulo = tkinter.Label(ventana_id, text=f"Eliminar registro de: {nombre_tabla}", 
+                              font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        # Mostrar registros existentes
+        label_existentes = tkinter.Label(ventana_id, text="Registros existentes:", 
+                                         font=('arial', 11, 'bold'))
+        label_existentes.pack(pady=10)
+        
+        frame_scroll = tkinter.Frame(ventana_id, relief="groove", bd=2)
+        frame_scroll.pack(padx=20, pady=5, fill="both", expand=True)
+        
+        text_registros = tkinter.Text(frame_scroll, height=8, width=50, font=('arial', 9))
+        scrollbar = tkinter.Scrollbar(frame_scroll, command=text_registros.yview)
+        text_registros.config(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side="right", fill="y")
+        text_registros.pack(side="left", fill="both", expand=True)
+        
+        # Cargar registros
+        cursor.execute(f"SELECT * FROM {nombre_tabla}")
+        registros = cursor.fetchall()
+        
+        nombres_columnas = [col[1] for col in columnas_info]
+        for reg in registros:
+            text_registros.insert("end", f"{pk_columna}={reg[0]}: {dict(zip(nombres_columnas, reg))}\n")
+        
+        text_registros.config(state="disabled")
+        
+        # Input para ID
+        frame_input = tkinter.Frame(ventana_id)
+        frame_input.pack(pady=15)
+        
+        tkinter.Label(frame_input, text=f"Ingrese el {pk_columna} a eliminar:", 
+                     font=('arial', 11)).pack(side="left", padx=5)
+        entry_id = tkinter.Entry(frame_input, font=('arial', 11), width=15)
+        entry_id.pack(side="left", padx=5)
+        entry_id.focus()
+        
+        def eliminar_directamente():
+            id_valor = entry_id.get().strip()
+            
+            if not id_valor:
+                messagebox.showerror("Error", "Debe ingresar un ID")
+                return
+            
+            try:
+                id_int = int(id_valor)
+            except ValueError:
+                messagebox.showerror("Error", "El ID debe ser un número entero")
+                return
+            
+            # Verificar que existe
+            cursor.execute(f"SELECT * FROM {nombre_tabla} WHERE {pk_columna} = ?", (id_int,))
+            registro = cursor.fetchone()
+            
+            if registro is None:
+                messagebox.showerror("Error", f"No existe ningún registro con {pk_columna} = {id_int}")
+                return
+            
+            # ELIMINAR DIRECTAMENTE SIN CONFIRMACIÓN
+            try:
+                cursor.execute(f"DELETE FROM {nombre_tabla} WHERE {pk_columna} = ?", (id_int,))
+                conexion.commit()
+                messagebox.showinfo("Éxito", f"Registro con {pk_columna} = {id_int} eliminado exitosamente")
+                ventana_id.destroy()
+                LeerBaseDatos()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo eliminar: {e}")
+        
+        btn_eliminar = tkinter.Button(ventana_id, text="Eliminar Registro", command=eliminar_directamente,
+                                       bg="red", fg="white", font=('arial', 12), width=20, height=2)
+        btn_eliminar.pack(pady=10)
+        
+        ventana_id.bind('<Return>', lambda event: eliminar_directamente())
     
-    ventana_inicial.bind('<Return>', lambda event: continuar())
-    ventana_inicial.bind('<Escape>', lambda event: ventana_inicial.destroy())
-
+    # ============================================================================
+    # OPCIÓN 3: ELIMINAR CAMPO
+    # ============================================================================
+    
+    def ventana_seleccionar_tabla_campo():
+        """Primera ventana: seleccionar tabla para eliminar campo"""
+        ventana_tabla = tkinter.Toplevel(raiz)
+        ventana_tabla.title("Eliminar Campo - Seleccionar Tabla")
+        ventana_tabla.geometry("400x300")
+        ventana_tabla.grab_set()
+        
+        titulo = tkinter.Label(ventana_tabla, text="Seleccione la tabla:", font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+            ORDER BY name
+        """)
+        tablas = [tabla[0] for tabla in cursor.fetchall()]
+        
+        if not tablas:
+            messagebox.showwarning("Sin tablas", "No hay tablas disponibles.")
+            ventana_tabla.destroy()
+            return
+        
+        combo_tabla = ttk.Combobox(ventana_tabla, values=tablas, state="readonly", font=('arial', 11), width=25)
+        combo_tabla.pack(pady=10)
+        combo_tabla.current(0)
+        
+        def continuar():
+            if not combo_tabla.get():
+                messagebox.showerror("Error", "Debe seleccionar una tabla")
+                return
+            
+            tabla_seleccionada = combo_tabla.get()
+            ventana_tabla.destroy()
+            ventana_seleccionar_campo_eliminar(tabla_seleccionada)
+        
+        btn_continuar = tkinter.Button(ventana_tabla, text="Continuar", command=continuar,
+                                       bg="dodgerblue", fg="white", font=('arial', 12), width=15, height=2)
+        btn_continuar.pack(pady=20)
+        
+        ventana_tabla.bind('<Return>', lambda event: continuar())
+    
+    def ventana_seleccionar_campo_eliminar(nombre_tabla):
+        """Segunda ventana: seleccionar campo a eliminar"""
+        ventana_campo = tkinter.Toplevel(raiz)
+        ventana_campo.title(f"Eliminar Campo de {nombre_tabla}")
+        ventana_campo.geometry("450x400")
+        ventana_campo.grab_set()
+        
+        titulo = tkinter.Label(ventana_campo, 
+                              text=f"Eliminar campo de: {nombre_tabla}", 
+                              font=('arial', 14, 'bold'))
+        titulo.pack(pady=20)
+        
+        # Obtener campos
+        cursor.execute(f"PRAGMA table_info({nombre_tabla})")
+        columnas_info = cursor.fetchall()
+        
+        # No permitir eliminar la primary key
+        campos_eliminables = []
+        for col in columnas_info:
+            if col[5] != 1:  # No es primary key
+                campos_eliminables.append(f"{col[1]} ({col[2]})")
+        
+        if not campos_eliminables:
+            messagebox.showwarning("Sin campos", "No hay campos eliminables (solo hay primary key)")
+            ventana_campo.destroy()
+            return
+        
+        label_info = tkinter.Label(ventana_campo, 
+                                   text="NOTA: SQLite no permite eliminar campos directamente.\nSe creará una nueva tabla sin el campo seleccionado.", 
+                                   font=('arial', 9, 'italic'), fg="blue")
+        label_info.pack(pady=10)
+        
+        tkinter.Label(ventana_campo, text="Seleccione el campo a eliminar:", 
+                     font=('arial', 11, 'bold')).pack(pady=10)
+        
+        combo_campo = ttk.Combobox(ventana_campo, values=campos_eliminables, 
+                                   state="readonly", font=('arial', 11), width=30)
+        combo_campo.pack(pady=10)
+        combo_campo.current(0)
+        
+        def continuar():
+            if not combo_campo.get():
+                messagebox.showerror("Error", "Debe seleccionar un campo")
+                return
+            
+            campo_seleccionado = combo_campo.get().split(" (")[0]  # Extraer solo el nombre
+            ventana_campo.destroy()
+            ventana_confirmar_eliminar_campo(nombre_tabla, campo_seleccionado, columnas_info)
+        
+        btn_confirmar = tkinter.Button(ventana_campo, text="Continuar", command=continuar,
+                                       bg="dodgerblue", fg="white", font=('arial', 12), width=15, height=2)
+        btn_confirmar.pack(pady=20)
+    
+    def ventana_confirmar_eliminar_campo(nombre_tabla, campo, columnas_info):
+        """Tercera ventana: confirmar eliminación del campo"""
+        ventana_conf = tkinter.Toplevel(raiz)
+        ventana_conf.title("Confirmar Eliminación")
+        ventana_conf.geometry("450x350")
+        ventana_conf.grab_set()
+        
+        titulo = tkinter.Label(ventana_conf, 
+                              text=f"¿Está seguro de eliminar el campo '{campo}'?", 
+                              font=('arial', 12, 'bold'))
+        titulo.pack(pady=20)
+        
+        mensaje1 = tkinter.Label(ventana_conf, 
+                                text=f"Tabla: {nombre_tabla}", 
+                                font=('arial', 10))
+        mensaje1.pack(pady=5)
+        
+        mensaje2 = tkinter.Label(ventana_conf, 
+                                text="Se eliminarán TODOS los datos de esta columna", 
+                                font=('arial', 10), fg="red")
+        mensaje2.pack(pady=5)
+        
+        mensaje3 = tkinter.Label(ventana_conf, 
+                                text="Esta acción NO se puede deshacer", 
+                                font=('arial', 10), fg="red")
+        mensaje3.pack(pady=5)
+        
+        def eliminar():
+            try:
+                # SQLite no permite DROP COLUMN directamente
+                # Hay que recrear la tabla sin ese campo
+                
+                # 1. Obtener todas las columnas excepto la que se va a eliminar
+                columnas_nuevas = [f"{col[1]} {col[2]}" for col in columnas_info if col[1] != campo]
+                nombres_columnas = [col[1] for col in columnas_info if col[1] != campo]
+                
+                # 2. Crear tabla temporal
+                sql_create = f"CREATE TABLE temp_table ({', '.join(columnas_nuevas)})"
+                cursor.execute(sql_create)
+                
+                # 3. Copiar datos (sin el campo eliminado)
+                columnas_str = ', '.join(nombres_columnas)
+                cursor.execute(f"INSERT INTO temp_table SELECT {columnas_str} FROM {nombre_tabla}")
+                
+                # 4. Eliminar tabla original
+                cursor.execute(f"DROP TABLE {nombre_tabla}")
+                
+                # 5. Renombrar tabla temporal
+                cursor.execute(f"ALTER TABLE temp_table RENAME TO {nombre_tabla}")
+                
+                conexion.commit()
+                messagebox.showinfo("Éxito", f"Campo '{campo}' eliminado exitosamente")
+                ventana_conf.destroy()
+                LeerBaseDatos()
+                
+            except Exception as e:
+                conexion.rollback()
+                messagebox.showerror("Error", f"No se pudo eliminar el campo: {e}")
+        
+        def cancelar():
+            ventana_conf.destroy()
+        
+        frame_botones = tkinter.Frame(ventana_conf)
+        frame_botones.pack(pady=30)
+        
+        btn_cancelar = tkinter.Button(frame_botones, text="Cancelar", 
+                                      command=cancelar, 
+                                      bg="gray", fg="white", 
+                                      font=('arial', 12), width=15, height=2)
+        btn_cancelar.pack(side="left", padx=10)
+        
+        btn_eliminar = tkinter.Button(frame_botones, text="Eliminar Campo", 
+                                     command=eliminar, 
+                                     bg="red", fg="white", 
+                                     font=('arial', 12), width=15, height=2)
+        btn_eliminar.pack(side="left", padx=10)
 
 def EditarTabla():
     """
