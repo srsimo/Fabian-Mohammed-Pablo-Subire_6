@@ -7,11 +7,15 @@ Created on Thu Dec  4 17:57:50 2025
 trees_por_tabla = {}
 import sqlite3
 import tkinter as tkinter
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, PhotoImage
 
 raiz = tkinter.Tk()
 raiz.title("UDUU")
 raiz.geometry("800x600")
+
+
+icono = PhotoImage(file="logo.png")
+raiz.iconphoto(True, icono)
 
 # Configurar que las columnas se expandan proporcionalmente
 raiz.grid_columnconfigure(0, weight=1)
@@ -1347,6 +1351,7 @@ cursor.execute("CREATE TABLE IF NOT EXISTS cliente(id_Cliente INTEGER PRIMARY KE
 cursor.execute("""CREATE TABLE IF NOT EXISTS producto(
     id_Producto INTEGER PRIMARY KEY AUTOINCREMENT, 
     id_Categoria INTEGER,
+    nombre VARCHAR(50),
     precio FLOAT,
     stock INTEGER,
     FOREIGN KEY (id_Categoria) REFERENCES categoria(id_Categoria)
@@ -1374,9 +1379,9 @@ if cursor.fetchone()[0] == 0:
     cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Maria', 'Garcia', 'Avenida Sol 25', 'maria@email.com')")
     cursor.execute("INSERT INTO cliente (nombre_Cliente, apellido_Cliente, direccion, correo) VALUES ('Carlos', 'Lopez', 'Plaza Luna 5', 'carlos@email.com')")
     
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (1, 2.50, 100)")
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (2, 1.80, 50)")
-    cursor.execute("INSERT INTO producto (id_Categoria, precio, stock) VALUES (3, 8.99, 30)")
+    cursor.execute("INSERT INTO producto (id_Categoria, nombre, precio, stock) VALUES (1, 'Almendras', 2.50, 100)")
+    cursor.execute("INSERT INTO producto (id_Categoria, nombre, precio, stock) VALUES (2, 'Pelotas', 1.80, 50)")
+    cursor.execute("INSERT INTO producto (id_Categoria, nombre, precio, stock) VALUES (3, 'Toallitas', 8.99, 30)")
     
     cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (1, 1, '2025-12-11', 5, 12.50)")
     cursor.execute("INSERT INTO pedido (id_Cliente, id_Producto, fecha_Pedido, cantidad, precio_Total) VALUES (2, 2, '2025-12-11', 3, 5.40)")
