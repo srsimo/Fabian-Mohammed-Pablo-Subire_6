@@ -7,11 +7,21 @@ Created on Thu Dec  4 17:57:50 2025
 trees_por_tabla = {}
 import sqlite3
 import tkinter as tkinter
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, PhotoImage
 
 raiz = tkinter.Tk()
 raiz.title("UDUU")
 raiz.geometry("800x600")
+
+
+import os
+
+try:
+    ruta_logo = os.path.join(os.path.dirname(__file__), "logo.png")
+    icono = PhotoImage(file=ruta_logo)
+    raiz.iconphoto(True, icono)
+except Exception as e:
+    print("No se pudo cargar el icono:", e)
 
 # Configurar que las columnas se expandan proporcionalmente
 raiz.grid_columnconfigure(0, weight=1)
@@ -27,6 +37,7 @@ def CrearTabla():
     ventana_seleccion.title("Crear")
     ventana_seleccion.geometry("450x400")
     ventana_seleccion.grab_set()
+    
     
     titulo = tkinter.Label(ventana_seleccion, text="¿Qué desea crear?", font=('arial', 16, 'bold'))
     titulo.pack(pady=30)
@@ -291,7 +302,8 @@ def CrearTabla():
             try:
                 cursor.execute(sql, valores)
                 conexion.commit()
-                messagebox.showinfo("Éxito", f"Registro insertado exitosamente")               
+                messagebox.showinfo("Éxito", f"Registro insertado exitosamente")
+                
                 if cerrar:
                     ventana_datos.destroy()
                     LeerBaseDatos()
@@ -925,7 +937,6 @@ def BorrarTabla():
                                      font=('arial', 12), width=15, height=2)
         btn_eliminar.pack(side="left", padx=10)
 
-
 def EditarTabla():
     """
     Función principal que inicia el proceso de edición de registros
@@ -1190,15 +1201,15 @@ def mostrar_exito(tabla):
 
 
 def BuscarTabla():
-    # 1) Ventana de búsqueda
+    # 1) Ventana principal (Buscar / Ordenar / Filtrar)
     ventana = tkinter.Toplevel(raiz)
-    ventana.title("Buscar en la base de datos")
-    ventana.geometry("520x260")
+    ventana.title("Buscar / Ordenar / Filtrar")
+    ventana.geometry("560x320")
     ventana.grab_set()
 
     # 2) Obtener tablas
     cursor.execute("""
-        SELECT name FROM sqlite_master 
+        SELECT name FROM sqlite_master
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
         ORDER BY name
     """)
@@ -1219,8 +1230,9 @@ def BuscarTabla():
     info = tkinter.Label(ventana, text="", fg="gray")
     info.pack(pady=5)
 
+    # -------- helpers ----------
     def cargar_columnas(event=None):
-        tabla = combo_tabla.get()
+        tabla = combo_tabla.get().strip()
         if not tabla:
             return
         cursor.execute(f"PRAGMA table_info({tabla})")
@@ -1232,8 +1244,7 @@ def BuscarTabla():
         for item in tree.get_children():
             tree.delete(item)
 
-    def mostrar_resultados(tabla, filas):
-        # Cambiar a la pestaña correcta y rellenar tree
+    def seleccionar_pestana_y_mostrar(tabla, filas):
         tree = trees_por_tabla.get(tabla)
         if tree is None:
             messagebox.showerror("Error", f"No encuentro el Treeview de la tabla '{tabla}'.")
@@ -1243,12 +1254,13 @@ def BuscarTabla():
         for fila in filas:
             tree.insert("", "end", values=fila)
 
-        # Seleccionar la pestaña de esa tabla
+        # Seleccionar la pestaña correcta
         for tab_id in notebook.tabs():
             if notebook.tab(tab_id, "text").lower() == tabla.lower():
                 notebook.select(tab_id)
                 break
 
+    # -------- Buscar (texto) ----------
     def buscar():
         tabla = combo_tabla.get().strip()
         col = combo_columna.get().strip()
@@ -1262,20 +1274,17 @@ def BuscarTabla():
         if texto == "":
             cursor.execute(f"SELECT * FROM {tabla}")
             filas = cursor.fetchall()
-            mostrar_resultados(tabla, filas)
+            seleccionar_pestana_y_mostrar(tabla, filas)
             info.config(text=f"Mostrando todo: {len(filas)} filas")
             return
 
-        # columnas de la tabla
         cursor.execute(f"PRAGMA table_info({tabla})")
         cols = [c[1] for c in cursor.fetchall()]
 
-        # Si elige una sola columna
         if col and col != "(Todas)":
             sql = f"SELECT * FROM {tabla} WHERE CAST({col} AS TEXT) LIKE ?"
             params = (f"%{texto}%",)
         else:
-            # Buscar en todas las columnas
             condiciones = " OR ".join([f"CAST({c} AS TEXT) LIKE ?" for c in cols])
             sql = f"SELECT * FROM {tabla} WHERE {condiciones}"
             params = tuple([f"%{texto}%"] * len(cols))
@@ -1283,10 +1292,122 @@ def BuscarTabla():
         try:
             cursor.execute(sql, params)
             filas = cursor.fetchall()
-            mostrar_resultados(tabla, filas)
+            seleccionar_pestana_y_mostrar(tabla, filas)
             info.config(text=f"Resultados: {len(filas)}")
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo buscar:\n{e}")
+
+    # -------- Ordenar / Filtrar ----------
+    def abrir_ordenar_filtrar():
+        tabla = combo_tabla.get().strip()
+        if not tabla:
+            messagebox.showerror("Error", "Selecciona una tabla primero.")
+            return
+
+        win = tkinter.Toplevel(ventana)
+        win.title("Ordenar / Filtrar")
+        win.geometry("600x420")
+        win.grab_set()
+
+        # Columnas y tipos
+        cursor.execute(f"PRAGMA table_info({tabla})")
+        info_cols = cursor.fetchall()
+        columnas = [c[1] for c in info_cols]
+        tipos = {c[1]: (c[2] or "").upper() for c in info_cols}
+
+        tkinter.Label(win, text=f"Tabla: {tabla}", font=("Arial", 12, "bold")).pack(pady=(10, 0))
+
+        # Columna orden
+        tkinter.Label(win, text="Ordenar por:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+        combo_col_orden = ttk.Combobox(win, state="readonly", values=columnas)
+        combo_col_orden.pack(fill="x", padx=12, pady=6)
+        combo_col_orden.current(0)
+
+        tkinter.Label(win, text="Tipo de orden:", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+        combo_orden = ttk.Combobox(win, state="readonly",
+                                  values=["ASC", "DESC"])
+        combo_orden.pack(fill="x", padx=12, pady=6)
+        combo_orden.current(0)
+
+        # --- filtro opcional ---
+        tkinter.Label(win, text="Filtro (opcional):", font=("Arial", 11, "bold")).pack(pady=(10, 0))
+        frame_filtro = tkinter.Frame(win)
+        frame_filtro.pack(fill="x", padx=12, pady=6)
+
+        combo_col_filtro = ttk.Combobox(frame_filtro, state="readonly", values=["(Sin filtro)"] + columnas, width=18)
+        combo_col_filtro.pack(side="left", padx=5)
+        combo_col_filtro.current(0)
+
+        combo_op = ttk.Combobox(frame_filtro, state="readonly",
+                                values=["=", "!=", ">", "<", ">=", "<=", "contiene"], width=10)
+        combo_op.pack(side="left", padx=5)
+        combo_op.current(0)
+
+        entry_valor = tkinter.Entry(frame_filtro)
+        entry_valor.pack(side="left", fill="x", expand=True, padx=5)
+
+        info2 = tkinter.Label(win, text="", fg="gray")
+        info2.pack(pady=5)
+
+        def aplicar():
+            col_orden = combo_col_orden.get().strip()
+            orden = combo_orden.get().strip()  # ASC o DESC
+
+            col_fil = combo_col_filtro.get().strip()
+            op = combo_op.get().strip()
+            val = entry_valor.get().strip()
+
+            sql = f"SELECT * FROM {tabla}"
+            params = []
+
+            # Si hay filtro
+            if col_fil != "(Sin filtro)" and val != "":
+                tipo_col = tipos.get(col_fil, "")
+
+                # contiene => LIKE
+                if op == "contiene":
+                    sql += f" WHERE CAST({col_fil} AS TEXT) LIKE ?"
+                    params.append(f"%{val}%")
+                else:
+                    # decidir si numérico
+                    es_num = any(t in tipo_col for t in ["INT", "REAL", "FLOAT", "DOUBLE", "NUM"])
+                    if es_num:
+                        try:
+                            val_num = float(val) if "." in val else int(val)
+                        except ValueError:
+                            messagebox.showerror("Error", f"'{val}' no es un número válido para {col_fil} ({tipo_col})")
+                            return
+                        sql += f" WHERE {col_fil} {op} ?"
+                        params.append(val_num)
+                    else:
+                        # texto: comparar como texto
+                        sql += f" WHERE CAST({col_fil} AS TEXT) {op} ?"
+                        params.append(val)
+
+            sql += f" ORDER BY {col_orden} {orden}"
+
+            try:
+                cursor.execute(sql, tuple(params))
+                filas = cursor.fetchall()
+                seleccionar_pestana_y_mostrar(tabla, filas)
+                info2.config(text=f"Mostrando {len(filas)} filas | ORDER BY {col_orden} {orden}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo aplicar ordenar/filtrar:\n{e}")
+
+        def resetear():
+            cursor.execute(f"SELECT * FROM {tabla}")
+            filas = cursor.fetchall()
+            seleccionar_pestana_y_mostrar(tabla, filas)
+            info2.config(text=f"Mostrando todo: {len(filas)} filas")
+
+        frame_btn2 = tkinter.Frame(win)
+        frame_btn2.pack(pady=14)
+
+        tkinter.Button(frame_btn2, text="Aplicar", command=aplicar, bg="green", fg="white", width=12).pack(side="left", padx=6)
+        tkinter.Button(frame_btn2, text="Reset", command=resetear, bg="dodgerblue", fg="white", width=12).pack(side="left", padx=6)
+        tkinter.Button(frame_btn2, text="Cerrar", command=win.destroy, bg="gray", fg="white", width=12).pack(side="left", padx=6)
+
+        win.bind("<Return>", lambda e: aplicar())
 
     # Selección inicial
     if tablas:
@@ -1294,10 +1415,12 @@ def BuscarTabla():
         cargar_columnas()
     combo_tabla.bind("<<ComboboxSelected>>", cargar_columnas)
 
+    # Botones
     frame_btn = tkinter.Frame(ventana)
     frame_btn.pack(pady=10)
 
     tkinter.Button(frame_btn, text="Buscar", command=buscar, bg="green", fg="white").pack(side="left", padx=6)
+    tkinter.Button(frame_btn, text="Ordenar/Filtrar", command=abrir_ordenar_filtrar, bg="orange", fg="white").pack(side="left", padx=6)
     tkinter.Button(frame_btn, text="Cerrar", command=ventana.destroy).pack(side="left", padx=6)
 
     entry_texto.focus()
@@ -1581,7 +1704,7 @@ botonBuscar.grid(row=0, column=3, sticky="ew")
 botonBuscar.config(fg="white", bg="dodgerblue", font=('arial',15))
 
 textoGrafico = "Grafico"
-botonGrafico = tkinter.Button(raiz, text=textoGrafico, command = MostrarGrafico , relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
+botonGrafico = tkinter.Button(raiz, text=textoGrafico, command= MostrarGrafico, relief="solid", bd=1, highlightbackground="black", highlightthickness=1)
 botonGrafico.grid(row=0, column=4, sticky="ew")
 botonGrafico.config(fg="white", bg="dodgerblue", font=('arial',15))
 

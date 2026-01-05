@@ -287,14 +287,56 @@ def CrearTabla():
         
         def insertar_datos(cerrar=False):
             valores = []
-            for entry in datos_entries:
+            
+            # Validar y convertir cada valor según su tipo
+            for i, entry in enumerate(datos_entries):
                 valor = entry.get().strip()
-                valores.append(valor if valor else None)
-            
-            if all(v is None for v in valores):
-                messagebox.showwarning("Advertencia", "Debe ingresar al menos un dato")
-                return
-            
+                tipo_campo = campos_info[i]['tipo'].upper()
+                nombre_campo = campos_info[i]['nombre']
+                
+                # Si el campo está vacío, insertar NULL
+                if not valor:
+                    valores.append(None)
+                    continue
+                
+                # Validar según el tipo de dato
+                try:
+                    if 'INT' in tipo_campo:
+                        # Validar que sea un número entero
+                        valores.append(int(valor))
+                        
+                    elif 'FLOAT' in tipo_campo or 'REAL' in tipo_campo:
+                        # Validar que sea un número decimal
+                        valores.append(float(valor))
+                        
+                    elif 'DATE' in tipo_campo:
+                        # Validar formato de fecha (YYYY-MM-DD)
+                        from datetime import datetime
+                        datetime.strptime(valor, '%Y-%m-%d')
+                        valores.append(valor)
+                        
+                    else:
+                        # Para TEXT, VARCHAR, BLOB, etc., dejar como string
+                        valores.append(valor)
+                        
+                except ValueError:
+                    # Si la conversión falla, mostrar error específico
+                    if 'INT' in tipo_campo:
+                        messagebox.showerror("Error de validación", 
+                            f"El campo '{nombre_campo}' debe ser un número entero.\n"
+                            f"Valor ingresado: '{valor}'")
+                    elif 'FLOAT' in tipo_campo or 'REAL' in tipo_campo:
+                        messagebox.showerror("Error de validación", 
+                            f"El campo '{nombre_campo}' debe ser un número decimal.\n"
+                            f"Valor ingresado: '{valor}'")
+                    elif 'DATE' in tipo_campo:
+                        messagebox.showerror("Error de validación", 
+                            f"El campo '{nombre_campo}' debe tener formato YYYY-MM-DD.\n"
+                            f"Ejemplo: 2025-12-25\n"
+                            f"Valor ingresado: '{valor}'")
+                    return  # Detener la inserción
+    
+            # Si llegamos aquí, todas las validaciones pasaron
             columnas = ", ".join([c['nombre'] for c in campos_info])
             placeholders = ", ".join(["?" for _ in valores])
             sql = f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})"
@@ -302,7 +344,7 @@ def CrearTabla():
             try:
                 cursor.execute(sql, valores)
                 conexion.commit()
-                messagebox.showinfo("Éxito", f"Registro insertado exitosamente")
+                messagebox.showinfo("Éxito", "Registro insertado exitosamente")
                 
                 if cerrar:
                     ventana_datos.destroy()
@@ -315,6 +357,7 @@ def CrearTabla():
             except Exception as e:
                 messagebox.showerror("Error", f"Error al insertar: {e}")
         
+        # ⚠️ IMPORTANTE: Los botones deben estar AQUÍ, dentro de la función
         frame_botones = tkinter.Frame(ventana_datos)
         frame_botones.pack(pady=15)
         
