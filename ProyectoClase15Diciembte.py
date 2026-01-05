@@ -1156,10 +1156,11 @@ def seleccionar_campo(tabla, pk_columna, pk_valor, registro):
 def ingresar_nuevo_valor(tabla, pk_columna, pk_valor, campo, valor_actual, tipo_dato):
     """
     Ventana 4: Permite ingresar el nuevo valor para el campo seleccionado
+    CON VALIDACIÓN MEJORADA Y SELECTOR DE FECHA PARA CAMPOS DATE
     """
     ventana_valor = tkinter.Toplevel(raiz)
     ventana_valor.title("Editar - Nuevo Valor")
-    ventana_valor.geometry("450x300")
+    ventana_valor.geometry("500x400")
     ventana_valor.grab_set()
     
     label_campo = tkinter.Label(ventana_valor, text=f"Campo: {campo}", 
@@ -1174,28 +1175,174 @@ def ingresar_nuevo_valor(tabla, pk_columna, pk_valor, campo, valor_actual, tipo_
                   font=('Arial', 9, 'italic'))
     label_tipo.pack(pady=5)
     
-    label_instruccion = tkinter.Label(ventana_valor, text="Ingrese el nuevo valor:", 
-                  font=('Arial', 11))
-    label_instruccion.pack(pady=10)
+    # Variables para los selectores de fecha
+    dia_var = tkinter.StringVar()
+    mes_var = tkinter.StringVar()
+    año_var = tkinter.StringVar()
     
-    entrada_valor = tkinter.Entry(ventana_valor, font=('Arial', 11), width=30)
-    entrada_valor.pack(pady=10)
-    entrada_valor.focus()
+    # Determinar si es un campo de tipo DATE
+    es_tipo_date = 'DATE' in tipo_dato.upper()
+    
+    if es_tipo_date:
+        # SELECTOR DE FECHA
+        label_instruccion = tkinter.Label(ventana_valor, text="Seleccione la fecha:", 
+                      font=('Arial', 11, 'bold'))
+        label_instruccion.pack(pady=10)
+        
+        # Frame para los selectores
+        frame_fecha = tkinter.Frame(ventana_valor)
+        frame_fecha.pack(pady=10)
+        
+        # Selector de Día
+        tkinter.Label(frame_fecha, text="Día:", font=('Arial', 10)).grid(row=0, column=0, padx=5)
+        combo_dia = ttk.Combobox(frame_fecha, textvariable=dia_var, width=8, 
+                                state="readonly", font=('Arial', 10))
+        combo_dia['values'] = [str(i).zfill(2) for i in range(1, 32)]
+        combo_dia.grid(row=0, column=1, padx=5)
+        combo_dia.current(0)
+        
+        # Selector de Mes
+        tkinter.Label(frame_fecha, text="Mes:", font=('Arial', 10)).grid(row=0, column=2, padx=5)
+        combo_mes = ttk.Combobox(frame_fecha, textvariable=mes_var, width=8, 
+                                state="readonly", font=('Arial', 10))
+        combo_mes['values'] = [str(i).zfill(2) for i in range(1, 13)]
+        combo_mes.grid(row=0, column=3, padx=5)
+        combo_mes.current(0)
+        
+        # Selector de Año
+        tkinter.Label(frame_fecha, text="Año:", font=('Arial', 10)).grid(row=0, column=4, padx=5)
+        combo_año = ttk.Combobox(frame_fecha, textvariable=año_var, width=10, 
+                                state="readonly", font=('Arial', 10))
+        años = [str(i) for i in range(2000, 2051)]
+        combo_año['values'] = años
+        combo_año.grid(row=0, column=5, padx=5)
+        combo_año.current(25)  # 2025 por defecto
+        
+        # Intentar parsear el valor actual si existe
+        if valor_actual and str(valor_actual) != 'None':
+            try:
+                partes = str(valor_actual).split('-')
+                if len(partes) == 3:
+                    año_actual = partes[0]
+                    mes_actual = partes[1]
+                    dia_actual = partes[2]
+                    
+                    if año_actual in años:
+                        combo_año.set(año_actual)
+                    
+                    mes_idx = int(mes_actual) - 1
+                    if 0 <= mes_idx < 12:
+                        combo_mes.current(mes_idx)
+                    
+                    dia_idx = int(dia_actual) - 1
+                    if 0 <= dia_idx < 31:
+                        combo_dia.current(dia_idx)
+            except:
+                pass
+        
+        # Label de vista previa
+        label_preview = tkinter.Label(ventana_valor, text="", 
+                                     font=('Arial', 10, 'italic'), fg="blue")
+        label_preview.pack(pady=10)
+        
+        def actualizar_preview(*args):
+            fecha = f"{año_var.get()}-{mes_var.get()}-{dia_var.get()}"
+            label_preview.config(text=f"Fecha seleccionada: {fecha}")
+        
+        dia_var.trace('w', actualizar_preview)
+        mes_var.trace('w', actualizar_preview)
+        año_var.trace('w', actualizar_preview)
+        actualizar_preview()
+        
+        entrada_valor = None  # No se usa para fechas
+        
+    else:
+        # ENTRADA NORMAL PARA OTROS TIPOS
+        label_instruccion = tkinter.Label(ventana_valor, text="Ingrese el nuevo valor:", 
+                      font=('Arial', 11))
+        label_instruccion.pack(pady=10)
+        
+        entrada_valor = tkinter.Entry(ventana_valor, font=('Arial', 11), width=30)
+        entrada_valor.pack(pady=10)
+        entrada_valor.focus()
+        
+        # Mostrar formato esperado según el tipo
+        formato_msg = ""
+        if 'INT' in tipo_dato.upper():
+            formato_msg = "Formato: número entero (ej: 123)"
+        elif 'FLOAT' in tipo_dato.upper() or 'REAL' in tipo_dato.upper():
+            formato_msg = "Formato: número decimal (ej: 12.50)"
+        elif 'VARCHAR' in tipo_dato.upper() or 'TEXT' in tipo_dato.upper():
+            formato_msg = "Formato: texto"
+        elif 'BLOB' in tipo_dato.upper():
+            formato_msg = "Formato: datos binarios"
+        
+        if formato_msg:
+            label_formato = tkinter.Label(ventana_valor, text=formato_msg, 
+                                         font=('Arial', 9), fg="gray")
+            label_formato.pack(pady=5)
     
     def guardar_cambio():
-        nuevo_valor = entrada_valor.get().strip()
-        
-        if not nuevo_valor:
-            messagebox.showerror("Error", "Debe ingresar un valor")
-            return
-        
         # Validar según el tipo de dato
         try:
-            if 'INT' in tipo_dato.upper():
-                nuevo_valor = int(nuevo_valor)
-            elif 'FLOAT' in tipo_dato.upper() or 'REAL' in tipo_dato.upper():
-                nuevo_valor = float(nuevo_valor)
-            # Para VARCHAR, DATE, etc., mantener como string
+            if es_tipo_date:
+                # Construir la fecha desde los selectores
+                año = año_var.get()
+                mes = mes_var.get()
+                dia = dia_var.get()
+                
+                nuevo_valor = f"{año}-{mes}-{dia}"
+                
+                # Validar que la fecha sea válida
+                from datetime import datetime
+                try:
+                    datetime.strptime(nuevo_valor, '%Y-%m-%d')
+                except ValueError:
+                    messagebox.showerror("Error de Fecha", 
+                        f"La fecha {nuevo_valor} no es válida.\n"
+                        f"Por ejemplo, no existe el 31 de febrero.")
+                    return
+                
+            else:
+                # Para otros tipos, obtener el valor del Entry
+                nuevo_valor = entrada_valor.get().strip()
+                
+                if not nuevo_valor:
+                    messagebox.showerror("Error", "Debe ingresar un valor")
+                    return
+                
+                # Validar según el tipo
+                tipo_upper = tipo_dato.upper()
+                
+                if 'INT' in tipo_upper:
+                    try:
+                        nuevo_valor = int(nuevo_valor)
+                    except ValueError:
+                        messagebox.showerror("Error de Validación", 
+                            f"El campo '{campo}' es de tipo INTEGER.\n"
+                            f"Debe ingresar un número entero sin decimales.\n"
+                            f"Ejemplo: 123, -45, 0\n\n"
+                            f"Valor ingresado: '{nuevo_valor}'")
+                        return
+                
+                elif 'FLOAT' in tipo_upper or 'REAL' in tipo_upper:
+                    try:
+                        nuevo_valor = float(nuevo_valor)
+                    except ValueError:
+                        messagebox.showerror("Error de Validación", 
+                            f"El campo '{campo}' es de tipo FLOAT/REAL.\n"
+                            f"Debe ingresar un número decimal.\n"
+                            f"Ejemplo: 12.50, 3.14, -7.8\n\n"
+                            f"Valor ingresado: '{nuevo_valor}'")
+                        return
+                
+                elif 'VARCHAR' in tipo_upper or 'TEXT' in tipo_upper:
+                    # Los textos son válidos tal cual
+                    pass
+                
+                elif 'BLOB' in tipo_upper:
+                    # Para BLOB, mantener como está
+                    pass
             
             # Realizar la actualización en la base de datos
             cursor.execute(f"UPDATE {tabla} SET {campo} = ? WHERE {pk_columna} = ?", 
@@ -1205,18 +1352,19 @@ def ingresar_nuevo_valor(tabla, pk_columna, pk_valor, campo, valor_actual, tipo_
             ventana_valor.destroy()
             mostrar_exito(tabla)
             
-        except ValueError:
-            messagebox.showerror("Error", 
-                f"El valor ingresado no es válido para el tipo {tipo_dato}")
         except sqlite3.Error as e:
             messagebox.showerror("Error de Base de Datos", 
-                f"No se pudo realizar la actualización: {str(e)}")
+                f"No se pudo realizar la actualización:\n{str(e)}")
+        except Exception as e:
+            messagebox.showerror("Error", 
+                f"Error inesperado:\n{str(e)}")
     
     boton_guardar = tkinter.Button(ventana_valor, text="Guardar", command=guardar_cambio,
                    bg="green", fg="white", font=('Arial', 12), width=15, height=2)
     boton_guardar.pack(pady=30)
     
-    ventana_valor.bind('<Return>', lambda event: guardar_cambio())
+    if not es_tipo_date:
+        ventana_valor.bind('<Return>', lambda event: guardar_cambio())
 
 
 def mostrar_exito(tabla):
